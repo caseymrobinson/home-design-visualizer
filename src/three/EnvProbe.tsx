@@ -48,7 +48,9 @@ export function EnvProbe({ design }: { design: Design }) {
   useFrame(() => {
     if (useStore.getState().render.active) return;
     const now = performance.now();
-    if (registry.envDirty > last.current && now - registry.envDirty > 120) {
+    // Throttle, don't debounce: keep the bounce light current while a slider is being dragged,
+    // otherwise stale light gets multiplied by a fresh exposure and the room flashes.
+    if (registry.envDirty > last.current && now - last.current > 90 && pending.current <= 0) {
       last.current = now;
       pending.current = 2;
     }

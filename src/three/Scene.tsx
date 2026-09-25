@@ -1,6 +1,6 @@
 import { Selection } from '@react-three/postprocessing';
-import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { FLAGS } from '../lib/flags';
 import { IN } from '../lib/units';
@@ -13,6 +13,7 @@ import { EnvProbe } from './EnvProbe';
 import { DragController, Items } from './Items';
 import { exposureFor } from './lightUnits';
 import { PathTracer } from './PathTracer';
+import { registry } from './registry';
 import { Room } from './Room';
 
 const BG = new THREE.Color('#e8e2d9');
@@ -26,10 +27,14 @@ export function backgroundColor(exposure: number) {
 function Background() {
   const design = useDesign();
   const { scene } = useThree();
-  const exposure = exposureFor(design);
-  useEffect(() => {
-    scene.background = backgroundColor(exposure);
-  }, [scene, exposure]);
+  const target = exposureFor(design);
+  const bg = useMemo(() => new THREE.Color(), []);
+  useFrame(() => {
+    // Track the adapted exposure so the backdrop never flashes while the eye adjusts.
+    if (useStore.getState().render.active) return;
+    bg.copy(backgroundColor(registry.exposure || target));
+    scene.background = bg;
+  });
   return null;
 }
 

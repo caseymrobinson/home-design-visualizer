@@ -14,6 +14,8 @@ export const registry = {
   /** Things only meant to be seen from inside the room (outdoor backdrop, hallway). */
   interiorOnly: new Set<THREE.Object3D>(),
   envDirty: 0,
+  /** Exposure the eye has adapted to (eases toward the metered target). */
+  exposure: 0,
 };
 
 export const markEnvDirty = () => {

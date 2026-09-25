@@ -1,6 +1,7 @@
 import '@fontsource-variable/inter';
 import '@fontsource-variable/fraunces';
 import { createRoot } from 'react-dom/client';
+import './three/shaderGuard';
 import { App } from './App';
 import { useStore } from './store';
 import './styles.css';
