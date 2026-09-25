@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { defaultDesign } from './lib/defaults';
+import { defaultDesign, LAYOUT_REV } from './lib/defaults';
 import { normalizeCorners } from './lib/geometry';
 import type { Design, Item, ViewMode } from './lib/types';
 import { uid } from './lib/units';
@@ -22,6 +22,7 @@ interface State {
   mode: ViewMode;
   panel: Panel;
   dragging: boolean;
+  editMode: boolean;
   snapping: boolean;
   showDims: boolean;
   fov: number;
@@ -63,7 +64,14 @@ function load(): { designs: Design[]; activeId: string } {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.designs?.length) return parsed;
+      if (parsed?.designs?.length) {
+        // Older saves predate the corrected layout (toilet/tub swap, door opposite the window).
+        const fresh = defaultDesign();
+        parsed.designs = parsed.designs.map((d: Design) =>
+          (d.layoutRev ?? 1) < LAYOUT_REV ? { ...d, room: fresh.room, items: fresh.items, layoutRev: LAYOUT_REV } : d,
+        );
+        return parsed;
+      }
     }
   } catch {
     /* storage may be unavailable */
@@ -83,6 +91,7 @@ export const useStore = create<State>((set, get) => ({
   mode: 'orbit',
   panel: null,
   dragging: false,
+  editMode: false,
   snapping: true,
   showDims: true,
   fov: 58,

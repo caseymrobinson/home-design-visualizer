@@ -47,7 +47,11 @@ export function useShortcuts() {
       }
       if (k === '2') st.setMode('walk');
       if (k === 'm') st.set({ showDims: !st.showDims });
-      if (!sel) return;
+      if (k === 'e' && st.mode !== 'walk') {
+        st.set({ editMode: !st.editMode });
+        st.notify(st.editMode ? 'Edit mode off — furniture is locked' : 'Edit mode on — drag to move things');
+      }
+      if (!sel || !st.editMode) return;
       const entry = CATALOG_BY_TYPE[sel.type];
       if (k === 'r' && entry?.mount !== 'wall') {
         const step = e.shiftKey ? Math.PI / 12 : Math.PI / 2;

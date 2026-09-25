@@ -6,6 +6,7 @@ import {
   Layers,
   Lightbulb,
   Magnet,
+  Move,
   Map as MapIcon,
   Orbit,
   Palette,
@@ -29,6 +30,7 @@ export function TopBar() {
   const canRedo = useStore((s) => s.future.length > 0);
   const snapping = useStore((s) => s.snapping);
   const showDims = useStore((s) => s.showDims);
+  const editMode = useStore((s) => s.editMode);
   const set = useStore((s) => s.set);
   return (
     <div className="topbar">
@@ -53,6 +55,10 @@ export function TopBar() {
       </motion.div>
 
       <motion.div className="actions" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.18 }}>
+        <button className={`edit-btn glass ${editMode ? 'on' : ''}`} onClick={() => set({ editMode: !editMode })} data-tip="Toggle moving things  E">
+          <Move size={16} />
+          {editMode ? 'Editing' : 'Edit'}
+        </button>
         <div className="tool-cluster glass">
           <button className="icon-btn" data-tip="Undo  ⌘Z" disabled={!canUndo} onClick={() => useStore.getState().undo()}>
             <Undo2 size={17} />
@@ -202,14 +208,13 @@ export function Status() {
 export function Hints() {
   const mode = useStore((s) => s.mode);
   const selected = useStore((s) => s.selectedId);
+  const editMode = useStore((s) => s.editMode);
   if (mode === 'walk') return null;
   return (
     <motion.div className="hints glass" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}>
       {selected ? (
         <>
-          <span>
-            <b>Drag</b> to move
-          </span>
+          <span>{editMode ? <><b>Drag</b> to move</> : <>Turn on <b>Edit</b> to move</>}</span>
           <span>
             <span className="kbd">R</span> rotate
           </span>

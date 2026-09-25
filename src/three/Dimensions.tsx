@@ -1,5 +1,5 @@
-import { Html, Line } from '@react-three/drei';
-import { useEffect, useMemo, useState } from 'react';
+import { Html } from '@react-three/drei';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CATALOG_BY_TYPE } from '../lib/catalog';
 import { add, findSurface, itemFootprint, itemFront, itemRight, mul, planSegments, rayCast, type Vec2 } from '../lib/geometry';
@@ -9,8 +9,38 @@ import { useStore } from '../store';
 import { surfaceMatrix } from './geom';
 import { dragApi } from './Items';
 import { itemOnSurface } from './placement';
+import { registry } from './registry';
 
 const ACCENT = '#c2703d';
+const lineMat = new THREE.MeshBasicMaterial({ color: ACCENT, depthTest: false });
+const up = new THREE.Vector3(0, 1, 0);
+
+/** Thin mesh segments (inches). Plain meshes keep the lighting probe and path tracer happy. */
+function Line({ points, dashed, lineWidth = 1.4 }: { points: THREE.Vector3[]; dashed?: boolean; lineWidth?: number; [k: string]: unknown }) {
+  const segs: [THREE.Vector3, THREE.Vector3][] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const L = a.distanceTo(b);
+    if (!(L > 1e-3)) continue;
+    if (!dashed) segs.push([a, b]);
+    else for (let t = 0; t < L; t += 2) segs.push([a.clone().lerp(b, t / L), a.clone().lerp(b, Math.min(L, t + 1.2) / L)]);
+  }
+  const r = 0.09 * lineWidth;
+  return (
+    <>
+      {segs.map(([a, b], i) => {
+        const L = a.distanceTo(b);
+        const q = new THREE.Quaternion().setFromUnitVectors(up, b.clone().sub(a).normalize());
+        return (
+          <mesh key={i} position={a.clone().add(b).multiplyScalar(0.5)} quaternion={q} material={lineMat} renderOrder={10}>
+            <cylinderGeometry args={[r, r, L, 6]} />
+          </mesh>
+        );
+      })}
+    </>
+  );
+}
 
 function Dim({ a, b, label, center }: { a: THREE.Vector3; b: THREE.Vector3; label: string; center?: boolean }) {
   const mid = a.clone().add(b).multiplyScalar(0.5);
@@ -44,6 +74,13 @@ export function Dimensions({ design }: { design: Design }) {
   }, []);
   const item = design.items.find((i) => i.id === selectedId);
   const segs = useMemo(() => planSegments(design.room), [design.room]);
+  const root = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = root.current;
+    if (!g) return;
+    registry.helpers.add(g);
+    return () => void registry.helpers.delete(g);
+  });
 
   if (!show || !item) return null;
   const entry = CATALOG_BY_TYPE[item.type];
@@ -93,7 +130,7 @@ export function Dimensions({ design }: { design: Design }) {
   }
 
   return (
-    <group>
+    <group ref={root}>
       {ring && <Line points={ring} color={ACCENT} lineWidth={1.2} dashed dashSize={1.2} gapSize={0.8} depthTest={false} renderOrder={9} />}
       {dims.map((d, i) => (
         <Dim key={i} {...d} />

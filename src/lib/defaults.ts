@@ -45,9 +45,9 @@ export function onWall(room: Room, surface: SurfaceRef, type: string, u: number,
 /**
  * Casey's bathroom: 100½″ × 100″, 95″ ceiling.
  *  Wall A (y = 0)     tub/shower alcove + toilet, split by a 32″ × 4″ half wall
- *  Wall B (x = 100½)  door (assumed)
+ *  Wall B (x = 100½)  shower valve end of the tub, door opposite the window
  *  Wall C (y = 100)   72″ floating vanity + 16″ linen cabinet
- *  Wall D (x = 0)     shower valve end of the tub, window (assumed)
+ *  Wall D (x = 0)     window
  */
 export function defaultRoom(): Room {
   return {
@@ -60,18 +60,18 @@ export function defaultRoom(): Room {
     ceiling: 95,
     wallThickness: 4.5,
     baseboard: 4,
-    partitions: [{ id: 'half-wall', name: 'Half wall', wall: 0, offset: 60, length: 32, thickness: 4, height: 0 }],
+    partitions: [{ id: 'half-wall', name: 'Half wall', wall: 0, offset: 36.5, length: 32, thickness: 4, height: 0 }],
     openings: [
-      { id: 'door', kind: 'door', wall: 1, offset: 53, width: 30, height: 80, sill: 0, hinge: 'start', openAngle: 0, glass: 'clear' },
+      { id: 'door', kind: 'door', wall: 1, offset: 57, width: 30, height: 80, sill: 0, hinge: 'start', openAngle: 0, glass: 'clear' },
       { id: 'window', kind: 'window', wall: 3, offset: 43, width: 28, height: 36, sill: 44, hinge: 'start', openAngle: 0, glass: 'frosted' },
     ],
     tileZones: [
-      { id: 'tz-back', name: 'Shower · back wall', surface: { kind: 'wall', wall: 0 }, u0: 0, u1: 60, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
-      { id: 'tz-end', name: 'Shower · valve wall', surface: { kind: 'wall', wall: 3 }, u0: 68, u1: 100, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
+      { id: 'tz-back', name: 'Shower · back wall', surface: { kind: 'wall', wall: 0 }, u0: 40.5, u1: 100.5, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
+      { id: 'tz-end', name: 'Shower · valve wall', surface: { kind: 'wall', wall: 1 }, u0: 0, u1: 32, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
       {
         id: 'tz-half',
         name: 'Shower · half wall',
-        surface: { kind: 'partition', id: 'half-wall', face: 'a' },
+        surface: { kind: 'partition', id: 'half-wall', face: 'b' },
         u0: 0,
         u1: 32,
         v0: 0,
@@ -96,17 +96,18 @@ export function defaultItems(room: Room): Item[] {
   const A: SurfaceRef = { kind: 'wall', wall: 0 };
   const C: SurfaceRef = { kind: 'wall', wall: 2 };
   const D: SurfaceRef = { kind: 'wall', wall: 3 };
-  const halfB: SurfaceRef = { kind: 'partition', id: 'half-wall', face: 'b' };
+  const B: SurfaceRef = { kind: 'wall', wall: 1 };
+  const halfA: SurfaceRef = { kind: 'partition', id: 'half-wall', face: 'a' };
   // Wall C runs from x = 100.5 back to x = 0, so u = 100.5 − x.
   const cx = (x: number) => 100.5 - x;
   // Wall D runs from y = 100 back to y = 0, so u = 100 − y.
   const dy = (y: number) => 100 - y;
   const vanityX = 54;
   return [
-    makeItem('tub', { x: 30, y: 0, rot: 0 }),
-    makeItem('toilet', { x: 82.25, y: 0, rot: 0 }),
-    onWall(room, D, 'shower-trim', dy(15)),
-    onWall(room, D, 'glass-panel', dy(29.6)),
+    makeItem('tub', { x: 70.5, y: 0, rot: 0, params: { drain: 'right' } }),
+    makeItem('toilet', { x: 18.25, y: 0, rot: 0 }),
+    onWall(room, B, 'shower-trim', 15),
+    onWall(room, B, 'glass-panel', 29.6),
     onWall(room, C, 'vanity', cx(vanityX)),
     onWall(room, C, 'linen', cx(9)),
     onWall(room, C, 'mirror', cx(vanityX - 18)),
@@ -114,14 +115,14 @@ export function defaultItems(room: Room): Item[] {
     onWall(room, C, 'sconce', cx(vanityX)),
     onWall(room, C, 'sconce', cx(vanityX - 34)),
     onWall(room, C, 'sconce', cx(vanityX + 34)),
-    onWall(room, A, 'shelf', 82.25),
-    onWall(room, halfB, 'tp-holder', 6),
+    onWall(room, A, 'shelf', 18.25),
+    onWall(room, halfA, 'tp-holder', 26),
     onWall(room, D, 'robe-hook', dy(35)),
     onWall(room, D, 'robe-hook', dy(39.5), { params: { towel: false } }),
     makeItem('ceiling-light', { x: 54, y: 64 }),
-    makeItem('ceiling-light', { x: 30, y: 15 }),
-    makeItem('ceiling-light', { x: 82, y: 22 }),
-    makeItem('rug', { x: 30, y: 31, rot: 0 }),
+    makeItem('ceiling-light', { x: 70.5, y: 15 }),
+    makeItem('ceiling-light', { x: 18, y: 22 }),
+    makeItem('rug', { x: 70.5, y: 31, rot: 0 }),
     makeItem('vanity-decor', { x: vanityX + 2, y: 94, rot: Math.PI }),
     makeItem('plant', { x: 1, y: 76, rot: Math.PI / 2, params: { kind: 'olive' }, h: 42 }),
   ];
@@ -133,9 +134,12 @@ export function tilesById(ids: string[]): Record<string, TileSpec> {
   return out;
 }
 
+export const LAYOUT_REV = 2;
+
 export function defaultDesign(): Design {
   const room = defaultRoom();
   return {
+    layoutRev: LAYOUT_REV,
     id: uid('design'),
     name: 'Option A · Ivory & oak',
     updatedAt: Date.now(),

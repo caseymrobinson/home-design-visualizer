@@ -65,7 +65,13 @@ export function EnvProbe({ design }: { design: Design }) {
       registry.ceiling.visible = true;
       restore.push(() => (registry.ceiling!.visible = v));
     }
-    for (const o of [...registry.rasterOnly, ...registry.helpers]) {
+    // Measurement lines & labels must never end up in the lighting capture.
+    const lines: THREE.Object3D[] = [];
+    scene.traverse((o) => {
+      const l = o as THREE.Object3D & { isLine2?: boolean; isLineSegments2?: boolean; isLine?: boolean };
+      if (l.isLine2 || l.isLineSegments2 || l.isLine) lines.push(o);
+    });
+    for (const o of [...registry.rasterOnly, ...registry.helpers, ...lines]) {
       const v = o.visible;
       o.visible = false;
       restore.push(() => (o.visible = v));

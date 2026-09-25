@@ -133,6 +133,7 @@ export interface Design {
   finishes: Finishes;
   tiles: Record<string, TileSpec>;
   lighting: Lighting;
+  layoutRev?: number;
 }
 
 export type ViewMode = 'orbit' | 'walk' | 'plan';

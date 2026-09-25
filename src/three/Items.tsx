@@ -73,13 +73,15 @@ const ItemNode = memo(function ItemNode({ item, design }: { item: Item; design: 
       name={item.id}
       onPointerDown={(e) => {
         if (e.button !== 0 || useStore.getState().render.active) return;
-        e.stopPropagation();
+        if (useStore.getState().editMode) e.stopPropagation();
         useStore.getState().select(item.id);
-        dragApi.start(item, e);
+        // Only pick things up in edit mode, so orbiting never nudges the furniture.
+        if (useStore.getState().editMode) dragApi.start(item, e);
       }}
       onPointerOver={(e) => {
         e.stopPropagation();
-        document.body.style.cursor = useStore.getState().dragging ? 'grabbing' : 'grab';
+        const st = useStore.getState();
+        document.body.style.cursor = st.dragging ? 'grabbing' : st.editMode ? 'grab' : 'pointer';
         useStore.getState().setHover(item.id);
       }}
       onPointerOut={() => {
