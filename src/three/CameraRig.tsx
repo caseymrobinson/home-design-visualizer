@@ -20,6 +20,7 @@ const PLAN_FOV = 30;
 export const viewInfo = { pos: new THREE.Vector3(), dir: new THREE.Vector3(0, 0, -1) };
 
 export const cameraApi = {
+  // (also exposed on window.__camera in dev for scripted screenshots)
   goto: (_vp: Viewpoint) => {},
   home: () => {},
 };

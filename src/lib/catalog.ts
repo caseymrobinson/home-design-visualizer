@@ -137,12 +137,18 @@ export const CATALOG: CatalogEntry[] = [
   {
     type: 'shower-trim',
     label: 'Shower & tub set',
-    blurb: 'Shower head, valve and tub spout',
+    blurb: 'Shower head, handheld option, valve and tub spout',
     category: 'Fixtures',
     mount: 'wall',
-    defaults: { w: 9, d: 10, h: 58, z: 22, params: { head: 'round', headSize: 8 } },
+    defaults: { w: 9, d: 10, h: 58, z: 22, params: { head: 'round', headSize: 8, handheld: 'none' } },
     dims: ['h', 'z'],
     fields: [
+      {
+        key: 'handheld',
+        label: 'Handheld shower',
+        kind: 'select',
+        options: opt(['none', 'None (fixed head)'], ['combo', 'Fixed head + handheld on slide bar'], ['slidebar', 'Handheld on slide bar only']),
+      },
       { key: 'head', label: 'Head shape', kind: 'select', options: opt(['round', 'Round'], ['square', 'Square']) },
       { key: 'headSize', label: 'Head diameter', kind: 'number', min: 4, max: 12, step: 0.5, unit: 'in' },
     ],
@@ -179,7 +185,7 @@ export const CATALOG: CatalogEntry[] = [
     blurb: 'Framed or frameless',
     category: 'Decor',
     mount: 'wall',
-    defaults: { w: 22, d: 1, h: 34, z: 42, params: { shape: 'arch', frame: 'metal' } },
+    defaults: { w: 22, d: 1, h: 34, z: 42, params: { shape: 'arch', frame: 'metal', rail: 'none' } },
     dims: ['w', 'h', 'z'],
     fields: [
       {
@@ -188,7 +194,8 @@ export const CATALOG: CatalogEntry[] = [
         kind: 'select',
         options: opt(['rect', 'Rectangle'], ['rounded', 'Soft rectangle'], ['arch', 'Arch'], ['pill', 'Pill'], ['round', 'Round']),
       },
-      { key: 'frame', label: 'Frame', kind: 'select', options: opt(['metal', 'Thin metal'], ['wood', 'Wood'], ['none', 'Frameless']) },
+      { key: 'frame', label: 'Frame', kind: 'select', options: opt(['metal', 'Thin metal (hardware finish)'], ['black', 'Black metal'], ['wood', 'Wood'], ['none', 'Frameless']) },
+      { key: 'rail', label: 'Hanging rail', kind: 'select', options: opt(['none', 'None'], ['black', 'Black metal rail'], ['finish', 'Rail in hardware finish']) },
     ],
   },
   {

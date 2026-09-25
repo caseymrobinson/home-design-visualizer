@@ -8,4 +8,4 @@ import './styles.css';
 
 createRoot(document.getElementById('root')!).render(<App />);
 
-if (import.meta.env.DEV) Object.assign(window, { __store: useStore });
+if (import.meta.env.DEV) import('./three/CameraRig').then((m) => Object.assign(window, { __store: useStore, __camera: m.cameraApi }));

@@ -47,8 +47,11 @@ export function Mirror({ item, design }: ItemProps) {
   const { w, h } = item;
   const kind = P(item, 'shape', 'arch');
   const frame = P(item, 'frame', 'metal');
-  const ft = frame === 'metal' ? 0.55 : frame === 'wood' ? 1.4 : 0;
+  const rail = P(item, 'rail', 'none');
+  const ft = frame === 'metal' || frame === 'black' ? 0.55 : frame === 'wood' ? 1.4 : 0;
   const metal = metalMaterial(design.finishes.metal);
+  const black = metalMaterial('matte-black');
+  const railMat = rail === 'black' ? black : metal;
   const wood = woodMaterial('white-oak');
   const cy = h / 2;
   const hh = kind === 'round' ? w : h;
@@ -109,7 +112,8 @@ export function Mirror({ item, design }: ItemProps) {
 
   return (
     <group>
-      <mesh geometry={frameGeo} material={ft <= 0 ? matte('#2e3331', 0.3) : frame === 'wood' ? wood : metal} castShadow receiveShadow />
+      <mesh geometry={frameGeo} material={ft <= 0 ? matte('#2e3331', 0.3) : frame === 'wood' ? wood : frame === 'black' ? black : metal} castShadow receiveShadow />
+      {rail !== 'none' && <MirrorRail w={w} top={kind === 'round' ? w : hh} material={railMat} />}
       <mesh position={[0, cy, 0.3]}>
         <boxGeometry args={[w * 0.6, hh * 0.6, 0.4]} />
         <meshStandardMaterial color="#222" />
@@ -118,6 +122,47 @@ export function Mirror({ item, design }: ItemProps) {
       <primitive object={stand} />
     </group>
   );
+}
+
+/** A wall rail above the mirror with two straps the mirror hangs from. */
+function MirrorRail({ w, top, material }: { w: number; top: number; material: THREE.Material }) {
+  const geo = useGeo(() => {
+    const railY = top + 6;
+    const len = w + 8;
+    const z = 1.6;
+    const parts: THREE.BufferGeometry[] = [];
+    const rod = new THREE.CylinderGeometry(0.3, 0.3, len, 20);
+    rod.rotateZ(Math.PI / 2);
+    rod.translate(0, railY, z);
+    parts.push(rod);
+    for (const sx of [-1, 1]) {
+      // end brackets back to the wall + finials
+      const post = new THREE.CylinderGeometry(0.22, 0.22, z, 12);
+      post.rotateX(Math.PI / 2);
+      post.translate(sx * (len / 2 - 0.8), railY, z / 2);
+      const rose = new THREE.CylinderGeometry(0.75, 0.75, 0.25, 24);
+      rose.rotateX(Math.PI / 2);
+      rose.translate(sx * (len / 2 - 0.8), railY, 0.12);
+      const fin = new THREE.SphereGeometry(0.45, 16, 12);
+      fin.translate(sx * (len / 2 + 0.2), railY, z);
+      // hanging strap: hook over the rail down to the frame
+      const hx = sx * w * 0.3;
+      const strap = tube(
+        [
+          [hx, railY + 0.35, z - 0.3],
+          [hx, railY + 0.45, z + 0.1],
+          [hx, railY, z + 0.45],
+          [hx, railY - 2, z - 0.3],
+          [hx, top - 0.2, 0.9],
+        ],
+        0.1,
+        24,
+      );
+      parts.push(post, rose, fin, strap);
+    }
+    return merge(parts);
+  }, [w, top]);
+  return <mesh geometry={geo} material={material} castShadow />;
 }
 
 function draped(width: number, front: number, back: number, R: number, th: number, gather = 0) {

@@ -138,6 +138,8 @@ export function ShowerTrim({ item, design }: ItemProps) {
   const metal = metalMaterial(design.finishes.metal);
   const head = P(item, 'head', 'round');
   const size = P(item, 'headSize', 8);
+  const handheld = P(item, 'handheld', 'none');
+  const fixed = handheld !== 'slidebar';
   const geo = useGeo(() => {
     const parts: THREE.BufferGeometry[] = [];
     // Tub spout
@@ -159,6 +161,59 @@ export function ShowerTrim({ item, design }: ItemProps) {
     lever.rotateZ(Math.PI / 2);
     lever.translate(1.8, valveY, 2);
     parts.push(esc, hub, lever);
+    if (handheld !== 'none') {
+      // Slide bar beside the valve, handheld resting in its bracket, hose to a wall elbow
+      const bx = 6.5;
+      const y0 = valveY + 6;
+      const y1 = Math.max(y0 + 12, h - 6);
+      const bar = new THREE.CylinderGeometry(0.4, 0.4, y1 - y0, 20);
+      bar.translate(bx, (y0 + y1) / 2, 1.8);
+      parts.push(bar);
+      for (const y of [y0, y1]) {
+        const post = new THREE.CylinderGeometry(0.35, 0.45, 1.8, 16);
+        post.rotateX(Math.PI / 2);
+        post.translate(bx, y, 0.9);
+        const rose = new THREE.CylinderGeometry(0.9, 0.9, 0.3, 24);
+        rose.rotateX(Math.PI / 2);
+        rose.translate(bx, y, 0.15);
+        parts.push(post, rose);
+      }
+      const hy = y1 - 4;
+      const bracket = roundedBox(1.4, 1.6, 1.6, 0.4, 2);
+      bracket.translate(bx, hy, 2.6);
+      parts.push(bracket);
+      // handheld: handle angled forward, head at top facing down/out
+      const handle = new THREE.CylinderGeometry(0.5, 0.42, 7, 20);
+      handle.rotateX(-0.35);
+      handle.translate(bx, hy + 2.2, 3.5);
+      const hh = new THREE.CylinderGeometry(2, 1.7, 0.9, 40);
+      hh.rotateX(-0.35 - Math.PI / 2 + 0.3);
+      hh.translate(bx, hy + 5.6, 5);
+      parts.push(handle, hh);
+      // wall supply elbow + hose drooping in a loop
+      const ex = 3;
+      const ey = valveY - 5;
+      const elbow = new THREE.CylinderGeometry(0.9, 0.9, 0.35, 24);
+      elbow.rotateX(Math.PI / 2);
+      elbow.translate(ex, ey, 0.18);
+      const nub = new THREE.CylinderGeometry(0.35, 0.35, 1.4, 16);
+      nub.rotateX(Math.PI / 2);
+      nub.translate(ex, ey, 0.9);
+      const hose = tube(
+        [
+          [ex, ey, 1.5],
+          [ex + 0.5, ey - 9, 3],
+          [bx + 1, ey - 12, 4],
+          [bx + 1.5, ey - 4, 4.4],
+          [bx + 0.6, hy - 6, 4],
+          [bx, hy - 1.2, 2.9],
+        ],
+        0.3,
+        64,
+      );
+      parts.push(elbow, nub, hose);
+    }
+    if (!fixed) return merge(parts);
     // Shower arm & head
     const armY = h - 2;
     const fl = new THREE.CylinderGeometry(1.1, 1.1, 0.4, 28);
@@ -180,7 +235,7 @@ export function ShowerTrim({ item, design }: ItemProps) {
     hd.translate(0, armY - 1.8, 8.6 + (head === 'square' ? 0 : 0));
     parts.push(hd);
     return merge(parts);
-  }, [h, head, size]);
+  }, [h, head, size, handheld]);
   const face = useGeo(() => {
     const r = size / 2 - 0.35;
     const g = head === 'square' ? new THREE.BoxGeometry(size - 0.6, 0.05, size - 0.6) : new THREE.CylinderGeometry(r, r, 0.05, 64);
@@ -191,7 +246,7 @@ export function ShowerTrim({ item, design }: ItemProps) {
   return (
     <group>
       <mesh geometry={geo} material={metal} castShadow />
-      <mesh geometry={face} castShadow>
+      <mesh geometry={face} castShadow visible={fixed}>
         <meshStandardMaterial color="#2b2b2b" roughness={0.6} />
       </mesh>
     </group>
