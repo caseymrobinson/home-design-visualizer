@@ -102,7 +102,7 @@ export function LengthInput({
 export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <button className={`toggle ${on ? 'on' : ''}`} onClick={() => onChange(!on)} aria-pressed={on} aria-label={label}>
-      <motion.span className="knob" animate={{ x: on ? 14 : 0 }} transition={spring} />
+      <span className="knob" />
     </button>
   );
 }

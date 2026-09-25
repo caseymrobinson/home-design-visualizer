@@ -120,7 +120,7 @@ export function Mirror({ item, design }: ItemProps) {
   );
 }
 
-function draped(width: number, front: number, back: number, R: number, th: number) {
+function draped(width: number, front: number, back: number, R: number, th: number, gather = 0) {
   // U-profile around a bar at the origin, extruded along x.
   const s = new THREE.Shape();
   const o = R + th;
@@ -143,8 +143,13 @@ function draped(width: number, front: number, back: number, R: number, th: numbe
     const y = pos.getY(i);
     const z = pos.getZ(i);
     const k = Math.max(0, -y) / Math.max(front, back);
-    pos.setZ(i, z + Math.sin(x * 0.9) * 0.18 * k);
-    pos.setX(i, x * (1 + k * 0.02));
+    // Gathered at the hook, relaxing into soft vertical folds as it falls
+    const spread = gather > 0 ? THREE.MathUtils.lerp(1 - gather, 1, Math.pow(k, 0.6)) : 1 + k * 0.02;
+    const fold = Math.sin((x / width) * Math.PI * 5) * (0.2 + 0.35 * k) * (gather > 0 ? 1 : 0.5);
+    pos.setX(i, x * spread);
+    pos.setZ(i, z + fold * Math.sign(z || 1) + Math.sin(x * 0.9) * 0.12 * k);
+    // Hem sags a touch at the corners
+    if (y < -Math.max(front, back) * 0.9) pos.setY(i, y - Math.pow(Math.abs(x) / (width / 2), 2) * 0.6);
   }
   g.computeVertexNormals();
   // Planar UVs in inches for the terry texture
@@ -213,7 +218,7 @@ export function RobeHook({ item, design }: ItemProps) {
     return merge([ros, post, cap]);
   }, []);
   const towel = useGeo(() => {
-    const g = draped(10, 16, 14, 0.28, 0.4);
+    const g = draped(12, 18, 15, 0.28, 0.35, 0.72);
     g.rotateX(-0.05);
     g.translate(0, 0.75, 1.6);
     return g;

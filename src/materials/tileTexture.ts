@@ -228,12 +228,12 @@ export function generateTileMaps(t: TileSpec, faceImage?: ImageData | null): Til
           const cloud = fbm(tu * 1.6 + 7, tv * 1.6, 3, seed + 1);
           const edge = smoothstep(0, 0.4, din);
           // Glaze pools thicker (and slightly deeper in tone) toward the rim
-          const k = (0.92 + 0.14 * n + (cloud - 0.5) * 0.06) * lerp(0.9, 1, edge);
+          const k = (0.95 + 0.09 * n + (cloud - 0.5) * 0.05) * lerp(0.92, 1, edge);
           r *= k;
           g *= k;
           b *= k;
-          h += (n - 0.5) * 0.14 + (cloud - 0.5) * 0.03;
-          ro = 0.03 + (1 - n) * 0.05;
+          h += (n - 0.5) * 0.08 + (cloud - 0.5) * 0.02;
+          ro = 0.04 + (1 - n) * 0.05;
           break;
         }
         case 'marble': {

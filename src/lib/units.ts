@@ -1,28 +1,20 @@
 /** All design data is stored in inches. The 3D scene works in meters. */
 export const IN = 0.0254;
 
-const FRACTIONS: [number, string][] = [
-  [0, ''],
-  [0.125, '⅛'],
-  [0.25, '¼'],
-  [0.375, '⅜'],
-  [0.5, '½'],
-  [0.625, '⅝'],
-  [0.75, '¾'],
-  [0.875, '⅞'],
-];
+const EIGHTHS = ['', '⅛', '¼', '⅜', '½', '⅝', '¾', '⅞'];
+const SUP: Record<string, string> = { '1': '¹', '3': '³', '5': '⁵', '7': '⁷', '9': '⁹' };
 
-/** Split a decimal inch value into whole inches and the nearest 1/8" glyph. */
+/** Split a decimal inch value into whole inches and the nearest 1/16" glyph. */
 function inchParts(inches: number): [number, string] {
-  let whole = Math.floor(inches + 1e-6);
-  let rem = inches - whole;
-  let best = FRACTIONS[0];
-  for (const f of FRACTIONS) if (Math.abs(rem - f[0]) < Math.abs(rem - best[0])) best = f;
-  if (Math.abs(rem - 1) < Math.abs(rem - best[0])) {
-    whole += 1;
-    best = FRACTIONS[0];
-  }
-  return [whole, best[1]];
+  let sixteenths = Math.round(inches * 16);
+  const whole = Math.floor(sixteenths / 16);
+  sixteenths -= whole * 16;
+  if (sixteenths % 2 === 0) return [whole, EIGHTHS[sixteenths / 2]];
+  const num = String(sixteenths)
+    .split('')
+    .map((c) => SUP[c] ?? '¹')
+    .join('');
+  return [whole, `${num}⁄₁₆`];
 }
 
 /** 100.5 → `8′ 4½″` */
@@ -32,7 +24,7 @@ export function formatFtIn(inches: number, opts: { compact?: boolean } = {}): st
   const [whole, frac] = inchParts(abs);
   const ft = Math.floor(whole / 12);
   const inch = whole - ft * 12;
-  if (ft === 0) return `${sign}${inch}${frac}″`;
+  if (ft === 0) return `${sign}${inch || !frac ? inch : ''}${frac}″`;
   if (opts.compact && inch === 0 && !frac) return `${sign}${ft}′`;
   return `${sign}${ft}′ ${inch}${frac}″`;
 }
@@ -41,7 +33,7 @@ export function formatFtIn(inches: number, opts: { compact?: boolean } = {}): st
 export function formatIn(inches: number): string {
   const sign = inches < 0 ? '−' : '';
   const [whole, frac] = inchParts(Math.abs(inches));
-  return `${sign}${whole}${frac}″`;
+  return `${sign}${whole || !frac ? whole : ''}${frac}″`;
 }
 
 /**
@@ -57,6 +49,7 @@ export function parseLength(input: string): number | null {
     .replace(/[″”]/g, '"')
     .replace(/feet|foot|ft/g, "'")
     .replace(/inches|inch|in/g, '"')
+    .replace(/([¹³⁵⁷⁹]+)⁄₁₆/g, (_, n: string) => ` ${n.replace(/[¹³⁵⁷⁹]/g, (c) => '13579'['¹³⁵⁷⁹'.indexOf(c)])}/16`)
     .replace(/⅛/g, ' 1/8')
     .replace(/¼/g, ' 1/4')
     .replace(/⅜/g, ' 3/8')

@@ -2,7 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { WebGLPathTracer } from 'three-gpu-pathtracer';
+import type { WebGLPathTracer } from 'three-gpu-pathtracer';
 import { useStore } from '../store';
 import { exposureFor } from './lightUnits';
 import { registry } from './registry';
@@ -53,6 +53,14 @@ export function PathTracer() {
     registry.rasterOnly.forEach((o) => hide(o, false));
     registry.traceOnly.forEach((o) => hide(o, true));
     registry.helpers.forEach((o) => hide(o, false));
+    // The tracer can't digest empty geometry or screen-space line helpers.
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh & { isLine2?: boolean; isLineSegments2?: boolean };
+      if (!m.isMesh || !o.visible) return;
+      const pos = m.geometry?.attributes?.position;
+      const mat = m.material as THREE.Material & { isLineMaterial?: boolean };
+      if (!pos || pos.count === 0 || m.isLine2 || m.isLineSegments2 || mat?.isLineMaterial) hide(o, false);
+    });
 
     const prevEnv = scene.environment;
     const prevBg = scene.background;
@@ -64,29 +72,32 @@ export function PathTracer() {
       scene.background = prevBg;
     });
 
-    gl.toneMapping = THREE.AgXToneMapping;
+    gl.toneMapping = THREE.NeutralToneMapping;
     gl.toneMappingExposure = exposure;
     restore.push(() => {
       gl.toneMapping = THREE.NoToneMapping;
       gl.toneMappingExposure = 1;
     });
 
-    const tracer = (pt.current ??= new WebGLPathTracer(gl));
-    tracer.tiles.set(2, 2);
-    tracer.bounces = 7;
-    tracer.transmissiveBounces = 8;
-    tracer.filterGlossyFactor = 0.35;
-    tracer.minSamples = 3;
-    tracer.renderDelay = 0;
-    tracer.fadeDuration = 400;
-    tracer.pausePathTracing = false;
-    tracer.renderScale = Math.min(window.devicePixelRatio, 1.5) / gl.getPixelRatio();
-
     let cancelled = false;
-    // Let the overlay paint before the (blocking) BVH build.
-    const t = window.setTimeout(() => {
-      if (cancelled) return;
+    // The tracer is only downloaded the first time someone asks for a render.
+    const t = window.setTimeout(async () => {
       try {
+        const { WebGLPathTracer } = await import('three-gpu-pathtracer');
+        if (cancelled) return;
+        const tracer = (pt.current ??= new WebGLPathTracer(gl));
+        tracer.tiles.set(2, 2);
+        tracer.bounces = 7;
+        tracer.transmissiveBounces = 8;
+        tracer.filterGlossyFactor = 0.35;
+        tracer.minSamples = 3;
+        tracer.renderDelay = 0;
+        tracer.fadeDuration = 400;
+        tracer.pausePathTracing = false;
+        tracer.renderScale = Math.min(window.devicePixelRatio, 1.5) / gl.getPixelRatio();
+        // Let the overlay paint before the (blocking) BVH build.
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        if (cancelled) return;
         tracer.setScene(scene, camera);
         tracer.reset();
         ready.current = true;

@@ -16,7 +16,11 @@ class ExposureEffect extends Effect {
       /* glsl */ `
         uniform float exposure;
         void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
-          outputColor = vec4(inputColor.rgb * exposure, inputColor.a);
+          vec3 c = inputColor.rgb;
+          // One NaN/Inf texel (a degenerate normal, a grazing-angle BRDF) would otherwise be smeared
+          // across the whole frame by bloom. Drop it here, and cap fireflies while we're at it.
+          if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+          outputColor = vec4(min(c * exposure, vec3(48.0)), inputColor.a);
         }
       `,
       { blendFunction: BlendFunction.SET, uniforms: new Map([['exposure', new THREE.Uniform(1)]]) },
@@ -39,7 +43,7 @@ export function Effects({ design }: { design: Design }) {
       <primitive object={exposurePass} />
       {has('bloom') ? <Bloom luminanceThreshold={1} luminanceSmoothing={0.15} intensity={0.22} mipmapBlur radius={0.6} /> : <></>}
       {has('outline') ? <Outline blur edgeStrength={4} pulseSpeed={0} visibleEdgeColor={0xd08a58} hiddenEdgeColor={0x8a6a52} xRay={false} width={1400} /> : <></>}
-      <ToneMapping mode={ToneMappingMode.AGX} />
+      <ToneMapping mode={ToneMappingMode.NEUTRAL} />
       {has('vig') ? <Vignette offset={0.3} darkness={0.32} /> : <></>}
     </EffectComposer>
   );

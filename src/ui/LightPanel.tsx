@@ -30,10 +30,10 @@ function SunArc({ time }: { time: number }) {
       <rect x="0" y="0" width="300" height="72" rx="12" fill="url(#skyg)" style={{ transition: 'fill 0.6s' }} />
       <path d="M12 70 Q150 -42 288 70" fill="none" stroke="rgba(30,26,22,0.18)" strokeDasharray="3 4" />
       <line x1="0" x2="300" y1="70" y2="70" stroke="rgba(30,26,22,0.18)" />
-      <motion.g animate={{ x, y }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+      <g className="sun-dot" style={{ transform: `translate(${x}px, ${y}px)` }}>
         <circle r="14" fill={day ? '#ffd28a' : '#e9e6f5'} opacity="0.35" />
         <circle r="7.5" fill={day ? '#f6b04e' : '#e9e6f5'} />
-      </motion.g>
+      </g>
       <text x="12" y="82" className="plan-dim">
         5am
       </text>

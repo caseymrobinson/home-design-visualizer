@@ -39,8 +39,8 @@ export function Daylight({ design }: { design: Design }) {
           color={sunColor}
           castShadow
           shadow-mapSize={[2048, 2048]}
-          shadow-bias={-0.0003}
-          shadow-normalBias={0.015}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.004}
           shadow-radius={3}
           shadow-camera-left={-size}
           shadow-camera-right={size}

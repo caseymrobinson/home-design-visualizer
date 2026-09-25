@@ -85,7 +85,7 @@ function useInterior() {
 export function InteriorVisibility() {
   useFrame(() => {
     const st = useStore.getState();
-    const show = st.mode === 'walk' || st.render.active;
+    const show = st.mode === 'walk';
     registry.interiorOnly.forEach((o) => (o.visible = show));
   });
   return null;
@@ -277,6 +277,52 @@ function Window({ o, t, design }: { o: Opening; t: number; design: Design }) {
   );
 }
 
+/**
+ * One watertight wall: an outline with door notches cut from the bottom edge and window holes,
+ * extruded through the wall thickness. No internal seams means no light leaks in the shadow map.
+ */
+function wallSolid(len: number, H: number, t: number, holes: Rect[]) {
+  const clamp = (v: number) => Math.min(Math.max(v, 0.01), len - 0.01);
+  const doors = holes
+    .filter((h) => h.v0 <= 0)
+    .map((h) => ({ l: clamp(h.u0), r: clamp(h.u1), top: Math.min(h.v1, H - 0.5) }))
+    .filter((h) => h.r - h.l > 0.1)
+    .sort((a, b) => a.l - b.l);
+  const shape = new THREE.Shape();
+  // Start a hair early so the joint with the previous wall can't open a see-through crack.
+  const s0 = -0.15;
+  shape.moveTo(s0, 0);
+  for (const d of doors) {
+    shape.lineTo(d.l, 0);
+    shape.lineTo(d.l, d.top);
+    shape.lineTo(d.r, d.top);
+    shape.lineTo(d.r, 0);
+  }
+  shape.lineTo(len, 0);
+  shape.lineTo(len, H);
+  shape.lineTo(s0, H);
+  shape.lineTo(s0, 0);
+  for (const h of holes) {
+    if (h.v0 <= 0) continue;
+    const l = clamp(h.u0);
+    const r = clamp(h.u1);
+    const b = Math.max(h.v0, 0.25);
+    const tp = Math.min(h.v1, H - 0.25);
+    if (r - l < 0.1 || tp - b < 0.1) continue;
+    const p = new THREE.Path();
+    p.moveTo(l, b);
+    p.lineTo(l, tp);
+    p.lineTo(r, tp);
+    p.lineTo(r, b);
+    p.lineTo(l, b);
+    shape.holes.push(p);
+  }
+  const g = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false, curveSegments: 1 });
+  g.translate(0, 0, -t);
+  g.computeVertexNormals();
+  return g;
+}
+
 function Wall({ design, s, t, index }: { design: Design; s: Surface; t: number; index: number }) {
   const outer = useRef<THREE.Group>(null!);
   const body = useRef<THREE.Group>(null!);
@@ -290,12 +336,25 @@ function Wall({ design, s, t, index }: { design: Design; s: Surface; t: number; 
   const mat = useMemo(() => surfaceMatrix(s), [s]);
 
   const geo = useMemo(
-    // Overlap neighbouring strips a hair so T-junctions can't open pixel cracks to the outside.
-    () => merge(rectMinusHoles({ u0: -0.05, u1: uEnd, v0: 0, v1: H }, holes).map((r) => box(r.u0 - 0.02, r.u1 + 0.02, r.v0 - 0.02, r.v1 + 0.02, -t, 0))),
+    () => wallSolid(uEnd, H, t, holes),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [uEnd, H, t, JSON.stringify(holes)],
   );
-  useEffect(() => () => geo.dispose(), [geo]);
+  // Shadow stand-in: thicker and running past both corners so no light slips through the joints.
+  const proxyGeo = useMemo(() => {
+    const pad = t + 8;
+    const g = wallSolid(uEnd + pad * 2, H + 8, t + 8, holes.map((h) => ({ ...h, u0: h.u0 + pad, u1: h.u1 + pad })));
+    g.translate(-pad, 0, 0);
+    return g;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uEnd, H, t, JSON.stringify(holes)]);
+  useEffect(
+    () => () => {
+      geo.dispose();
+      proxyGeo.dispose();
+    },
+    [geo, proxyGeo],
+  );
 
   const state = useRef({ scale: 1, full: false });
   const { camera } = useThree();
@@ -345,7 +404,7 @@ function Wall({ design, s, t, index }: { design: Design; s: Surface; t: number; 
           o.kind === 'door' ? <Door key={o.id} o={o} t={t} design={design} /> : <Window key={o.id} o={o} t={t} design={design} />,
         )}
       </group>
-      <ShadowProxy geometry={geo} />
+      <ShadowProxy geometry={proxyGeo} />
       <mesh ref={cap} position={[uEnd / 2, H, -t / 2]} material={matte('#3a3632', 0.9)}>
         <boxGeometry args={[uEnd, 0.3, t]} />
       </mesh>

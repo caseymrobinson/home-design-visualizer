@@ -6,7 +6,7 @@ import type { Design, Lighting } from '../lib/types';
  * Photometric calibration. Light sources use real units (lumens → candela, lux, nits),
  * and a camera exposure brings the result into display range — same as a photographer would.
  */
-export const EXPOSURE_KEY = 2.2;
+export const EXPOSURE_KEY = 3.4;
 
 /**
  * Metered exposure: estimate the average illuminance in the room from sun, sky and fixtures,

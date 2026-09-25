@@ -10,6 +10,7 @@ import { IN } from '../lib/units';
 import type { Viewpoint } from '../lib/views';
 import { viewpoints } from '../lib/views';
 import { useStore } from '../store';
+import { dragApi } from './Items';
 import { hitPlane } from './placement';
 
 const ORBIT_FOV = 36;
@@ -21,7 +22,6 @@ export const viewInfo = { pos: new THREE.Vector3(), dir: new THREE.Vector3(0, 0,
 export const cameraApi = {
   goto: (_vp: Viewpoint) => {},
   home: () => {},
-  dragActive: () => false,
 };
 
 function distToSeg(p: Vec2, s: Seg) {
@@ -163,7 +163,7 @@ export function CameraRig({ design }: { design: Design }) {
       w.ly = e.clientY;
     };
     const move = (e: PointerEvent) => {
-      if (!w.looking || useStore.getState().dragging || cameraApi.dragActive()) return;
+      if (!w.looking || useStore.getState().dragging || dragApi.holding) return;
       const dx = e.clientX - w.lx;
       const dy = e.clientY - w.ly;
       w.lx = e.clientX;
@@ -240,9 +240,9 @@ export function CameraRig({ design }: { design: Design }) {
       tw.t += Math.min(rawDt, 0.25) / tw.dur;
       const k = ease(Math.min(1, tw.t));
       // Arc upward slightly mid-flight for a more cinematic path
-      const lift = Math.sin(k * Math.PI) * 0.25 * tw.p0.distanceTo(tw.p1);
       cam.position.lerpVectors(tw.p0, tw.p1, k);
-      cam.position.y += lift * 0.15;
+      // Swoop in from outside with a gentle arc; moves within the room stay at eye level.
+      if (tw.p0.y > EYE_HEIGHT * IN * 1.6) cam.position.y += Math.sin(k * Math.PI) * 0.04 * tw.p0.distanceTo(tw.p1);
       const look = new THREE.Vector3().lerpVectors(tw.l0, tw.l1, k);
       cam.lookAt(look);
       if (tw.t >= 1) {

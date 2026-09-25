@@ -23,6 +23,8 @@ interface DragState {
 
 export const dragApi = {
   start: (_it: Item, _e: ThreeEvent<PointerEvent>) => {},
+  /** True while the pointer is holding an item (even before it has moved). */
+  holding: false,
   guides: [] as Guide[],
   listeners: new Set<() => void>(),
 };
@@ -139,6 +141,7 @@ export function DragController() {
         const hp = hitPlane(ray, mount === 'ceiling' ? design.room.ceiling : 0);
         if (hp) grabFloor = { x: it.x - hp.x, y: it.y - hp.y };
       }
+      dragApi.holding = true;
       drag.current = { id: it.id, mount, startX: e.nativeEvent.clientX, startY: e.nativeEvent.clientY, moved: false, grabWall, grabFloor };
     };
 
@@ -181,6 +184,7 @@ export function DragController() {
         document.body.style.cursor = '';
       }
       drag.current = null;
+      dragApi.holding = false;
       dragApi.guides = [];
       dragApi.listeners.forEach((l) => l());
     };

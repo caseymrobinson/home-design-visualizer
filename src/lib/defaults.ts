@@ -13,8 +13,8 @@ export const DEFAULT_LIGHTING: Lighting = {
   overcast: false,
   sconces: true,
   ceiling: true,
-  dimmer: 0.85,
-  kelvin: 2900,
+  dimmer: 0.8,
+  kelvin: 3000,
   exposure: 0,
 };
 

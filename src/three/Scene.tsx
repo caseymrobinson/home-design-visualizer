@@ -19,8 +19,8 @@ const BG = new THREE.Color('#e8e2d9');
 
 /** The scene is photometric, so the backdrop is scaled to read as the UI's paper color after exposure. */
 export function backgroundColor(exposure: number) {
-  // AgX compresses mid-tones; lift so the tone-mapped result lands on the UI paper color.
-  return BG.clone().multiplyScalar(2.35 / exposure);
+  // Neutral tone mapping rolls off highlights; this lands the backdrop on the UI paper color.
+  return BG.clone().multiplyScalar(1.02 / exposure);
 }
 
 function Background() {
@@ -39,7 +39,7 @@ function RawExposure() {
   const renderActive = useStore((s) => s.render.active);
   useEffect(() => {
     if (renderActive) return;
-    gl.toneMapping = THREE.AgXToneMapping;
+    gl.toneMapping = THREE.NeutralToneMapping;
     gl.toneMappingExposure = exposureFor(design);
   });
   return null;
