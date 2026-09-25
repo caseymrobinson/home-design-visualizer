@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { kelvinToHex, metalMaterial } from '../../materials/library';
+import { lampColor, metalMaterial } from '../../materials/library';
 import { pointCandela, shadeNits, spotCandela } from '../lightUnits';
 import { lathe, P, type ItemProps } from './common';
 
@@ -17,7 +17,7 @@ function useGlow(on: boolean, nits: number, kelvin: number, base = '#f6f2ea', tr
     [base, transmission],
   );
   useEffect(() => () => m.dispose(), [m]);
-  m.emissive.set(on ? kelvinToHex(kelvin) : '#000000');
+  m.emissive.set(on ? lampColor(kelvin) : '#000000');
   m.emissiveIntensity = on ? nits : 0;
   return m;
 }
@@ -29,7 +29,7 @@ export function Sconce({ item, design }: ItemProps) {
   const lumens = P(item, 'lumens', 450);
   const metal = metalMaterial(design.finishes.metal);
   const glow = useGlow(on, shadeNits(lumens, L), L.kelvin, style === 'cone' ? '#efe6d6' : '#f7f4ee');
-  const color = kelvinToHex(L.kelvin);
+  const color = lampColor(L.kelvin);
   const { h, d } = item;
   const cy = h * 0.55;
   const shadeZ = d - 3;
@@ -114,7 +114,7 @@ export function CeilingLight({ item, design }: ItemProps) {
   const on = L.ceiling;
   const style = P(item, 'style', 'recessed');
   const lumens = P(item, 'lumens', 700);
-  const color = kelvinToHex(L.kelvin);
+  const color = lampColor(L.kelvin);
   const glow = useGlow(on, shadeNits(lumens, L) * (style === 'recessed' ? 3 : 1), L.kelvin);
   const metal = metalMaterial(design.finishes.metal);
   const target = useMemo(() => new THREE.Object3D(), []);

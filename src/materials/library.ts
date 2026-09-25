@@ -424,3 +424,16 @@ export function kelvinToHex(k: number) {
   const c = (v: number) => Math.round(Math.min(255, Math.max(0, v)));
   return `#${[r, g, b].map((v) => c(v).toString(16).padStart(2, '0')).join('')}`;
 }
+
+/**
+ * Lamp color as a camera would see it: white-balanced toward neutral so 2700–3000K reads warm,
+ * not orange, and 5000K reads crisp rather than blue.
+ */
+export function lampColor(k: number) {
+  const raw = new THREE.Color(kelvinToHex(k));
+  const neutral = new THREE.Color(kelvinToHex(4300));
+  const c = new THREE.Color(raw.r / neutral.r, raw.g / neutral.g, raw.b / neutral.b);
+  const m = Math.max(c.r, c.g, c.b);
+  c.multiplyScalar(1 / m);
+  return `#${c.getHexString()}`;
+}

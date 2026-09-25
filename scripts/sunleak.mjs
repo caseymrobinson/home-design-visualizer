@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+import { writeFileSync } from 'fs';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 640, height: 400 } });
+await p.goto('http://localhost:5173/?pdb=1&env=0' + (process.env.Q||''));
+await p.waitForTimeout(30000);
+await p.evaluate(() => window.__store.getState().update(d => Object.assign(d.lighting, { sconces: false, ceiling: false }), false));
+await p.waitForTimeout(10000);
+const shot = async (n) => { const d = await p.evaluate(() => new Promise(r => requestAnimationFrame(() => r(document.querySelector('canvas').toDataURL())))); writeFileSync(`screenshots/leak-${n}${process.env.TAG||''}.png`, Buffer.from(d.split(',')[1],'base64')); };
+await shot('sunonly');
+console.log(await p.evaluate(() => { let r; window.__three.scene.traverse(o => { if (o.isDirectionalLight) { const c=o.shadow.camera; r={pos:o.position.toArray().map(v=>+v.toFixed(2)), tgt:o.target.position.toArray().map(v=>+v.toFixed(2)), inScene: !!o.target.parent, l:c.left, near:c.near, far:c.far, p0:c.projectionMatrix.elements[0].toFixed(3)}; } }); return JSON.stringify(r); }));
+await b.close();

@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Cloud, LampCeiling, LampWallUp, Sun } from 'lucide-react';
 import { useRef } from 'react';
 import type { Design, Lighting } from '../lib/types';
-import { kelvinToHex } from '../materials/library';
+import { lampColor } from '../materials/library';
 import { useDesign, useStore } from '../store';
 import { Field, PanelShell, Section, Slider, staggerItem, Toggle } from './primitives';
 
@@ -117,7 +117,7 @@ export function LightPanel() {
           <Slider
             label={
               <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                Color temperature <span style={{ width: 10, height: 10, borderRadius: 5, background: kelvinToHex(L.kelvin), boxShadow: '0 0 0 1px rgba(0,0,0,.1)' }} />
+                Color temperature <span style={{ width: 10, height: 10, borderRadius: 5, background: lampColor(L.kelvin), boxShadow: '0 0 0 1px rgba(0,0,0,.1)' }} />
               </span>
             }
             className="kelvin"

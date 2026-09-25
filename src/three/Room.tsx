@@ -14,6 +14,11 @@ const CASING = 3.25;
 
 /** Invisible, shadow-only stand-ins: lowered walls still shade the room like the real thing. */
 const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+// Record the face nearest the sun, not the inner face: otherwise anything flush against a
+// cut-away wall (tub back, toilet tank, shelf decor) sits exactly on the shadow edge and glows.
+shadowOnly.shadowSide = THREE.DoubleSide;
+/** Section-cut "poché" on lowered walls: unlit, so sun can't make the cut edges glow. */
+const pocheMat = new THREE.MeshBasicMaterial({ color: '#000000' });
 
 function ShadowProxy({ geometry }: { geometry: THREE.BufferGeometry }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -405,7 +410,7 @@ function Wall({ design, s, t, index }: { design: Design; s: Surface; t: number; 
         )}
       </group>
       <ShadowProxy geometry={proxyGeo} />
-      <mesh ref={cap} position={[uEnd / 2, H, -t / 2]} material={matte('#3a3632', 0.9)}>
+      <mesh ref={cap} position={[uEnd / 2, H, -t / 2]} material={pocheMat}>
         <boxGeometry args={[uEnd, 0.3, t]} />
       </mesh>
     </group>
