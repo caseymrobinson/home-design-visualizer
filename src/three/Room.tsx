@@ -459,8 +459,10 @@ function Ceiling({ design }: { design: Design }) {
     registry.ceiling = ref.current;
   }, []);
   useFrame(() => {
-    const mode = useStore.getState().mode;
-    ref.current.visible = mode === 'walk' || camera.position.y / IN < design.room.ceiling - 1;
+    const st = useStore.getState();
+    // While path tracing, the tracer decides (the room is traced closed, roof included).
+    if (st.render.active) return;
+    ref.current.visible = st.mode === 'walk' || camera.position.y / IN < design.room.ceiling - 1;
   });
   return (
     <>

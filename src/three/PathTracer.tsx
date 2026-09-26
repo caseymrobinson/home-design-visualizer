@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
 import type { WebGLPathTracer } from 'three-gpu-pathtracer';
 import { useStore } from '../store';
 import { exposureFor, skyNits } from './lightUnits';
@@ -30,7 +31,14 @@ function studio(level: number) {
   return studioEnv;
 }
 
+type DenoiseQuad = FullScreenQuad & { material: THREE.ShaderMaterial & { map: THREE.Texture | null; sigma: number; threshold: number; kSigma: number } };
+let denoise: DenoiseQuad;
+
 type TracerMaterial = THREE.ShaderMaterial & { needsUpdate: boolean };
+/** Brightest single sample allowed, in display whites (applied as 12 / exposure). */
+const CLAMP_WHITES = 12;
+const clampUniform = { value: 1e9 };
+
 const SEE_THROUGH = '/* matte: camera sees through */';
 
 /**
@@ -58,10 +66,28 @@ function installSeeThrough(tracer: WebGLPathTracer) {
       'gl_FragColor.a *= opacity;',
       `uvec4 fBits = floatBitsToUint( gl_FragColor ) & 0x7f800000u;
       if ( any( equal( fBits, uvec4( 0x7f800000u ) ) ) ) gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+      // Firefly clamp, far above display white: rare glints off glossy surfaces never converge.
+      float fMax = max( gl_FragColor.r, max( gl_FragColor.g, gl_FragColor.b ) );
+      if ( fMax > sampleClamp ) gl_FragColor.rgb *= sampleClamp / fMax;
       gl_FragColor.a *= opacity;`,
-    );
+    ).replace('uniform mat4 cameraWorldMatrix;', 'uniform mat4 cameraWorldMatrix;\nuniform float sampleClamp;');
+    m.uniforms.sampleClamp = clampUniform;
     if (guarded === next) console.warn('path tracer: NaN guard did not apply');
-    m.fragmentShader = guarded;
+    // Lamp shades and glowing trims are only visual: their light is already carried by real
+    // light sources. Emission reached through diffuse bounces would count it twice, and small
+    // glowing shapes found by chance are the classic source of fireflies that never converge.
+    // Keep emission seen directly or through mirrors and glass.
+    const lit = guarded
+      .replace(
+        'state.firstRay = i == 0 && state.transmissiveTraversals == transmissiveBounces;',
+        'state.firstRay = i == 0 && state.transmissiveTraversals == transmissiveBounces;\n\t\t\t\t\t\tfloat pathRoughness = state.accumulatedRoughness;',
+      )
+      .replace(
+        'gl_FragColor.rgb += ( surf.emission * state.throughputColor );',
+        'if ( pathRoughness < 0.3 ) gl_FragColor.rgb += ( surf.emission * state.throughputColor );',
+      );
+    if (lit === guarded || !lit.includes('pathRoughness < 0.3')) console.warn('path tracer: emission patch did not apply');
+    m.fragmentShader = lit;
     m.needsUpdate = true;
   }
 }
@@ -88,6 +114,8 @@ export function PathTracer() {
     registry.rasterOnly.forEach((o) => hide(o, false));
     registry.traceOnly.forEach((o) => hide(o, true));
     registry.helpers.forEach((o) => hide(o, false));
+    // Outdoor/hallway backdrops are emissive stand-ins; the tracer's sky lights the window properly.
+    registry.interiorOnly.forEach((o) => hide(o, false));
     // The tracer can't digest empty geometry or screen-space line helpers.
     scene.traverse((o) => {
       const m = o as THREE.Mesh & { isLine2?: boolean; isLineSegments2?: boolean };
@@ -150,6 +178,7 @@ export function PathTracer() {
 
     gl.toneMapping = THREE.NeutralToneMapping;
     gl.toneMappingExposure = exposure;
+    clampUniform.value = CLAMP_WHITES / exposure;
     metering.state = 'pending';
     metering.ev = Math.pow(2, design.lighting.exposure);
     restore.push(() => {
@@ -161,16 +190,34 @@ export function PathTracer() {
     // The tracer is only downloaded the first time someone asks for a render.
     const t = window.setTimeout(async () => {
       try {
-        const { WebGLPathTracer } = await import('three-gpu-pathtracer');
+        const { WebGLPathTracer, DenoiseMaterial } = await import('three-gpu-pathtracer');
+        denoise ??= new FullScreenQuad(new DenoiseMaterial()) as DenoiseQuad;
         if (cancelled) return;
         const tracer = (pt.current ??= new WebGLPathTracer(gl));
         tracer.tiles.set(2, 2);
-        tracer.bounces = 7;
+        tracer.bounces = 5;
         tracer.transmissiveBounces = 8;
         tracer.filterGlossyFactor = 0.35;
         tracer.minSamples = 3;
         tracer.renderDelay = 0;
-        tracer.fadeDuration = 400;
+        tracer.fadeDuration = 0;
+        tracer.renderToCanvasCallback = (target, renderer, quad) => {
+          const samples = tracer.samples;
+          const auto = renderer.autoClear;
+          renderer.autoClear = false;
+          if (samples < 1) quad.render(renderer);
+          else {
+            // Edge-aware denoise that relaxes as samples converge. Noise falls as 1/√samples, so
+            // the edge threshold tracks it; it works on raw scene values, hence the exposure.
+            const k = Math.sqrt(16 / Math.max(samples, 16));
+            denoise.material.map = target.texture;
+            denoise.material.sigma = Math.max(1.5, 5 * k);
+            denoise.material.threshold = Math.max(0.1, 0.5 * k) / renderer.toneMappingExposure;
+            denoise.material.kSigma = 1;
+            denoise.render(renderer);
+          }
+          renderer.autoClear = auto;
+        };
         tracer.pausePathTracing = false;
         tracer.renderScale = Math.min(window.devicePixelRatio, 1.5) / gl.getPixelRatio();
         // Let the overlay paint before the (blocking) BVH build.
@@ -255,6 +302,7 @@ function TraceLoop({ pt, ready }: { pt: React.RefObject<WebGLPathTracer | null>;
       const exposure = meter(tracer, gl, bg);
       if (exposure) {
         gl.toneMappingExposure = exposure * metering.ev;
+        clampUniform.value = CLAMP_WHITES / gl.toneMappingExposure;
         scene.background = backgroundColor(gl.toneMappingExposure);
         tracer.updateEnvironment();
         tracer.reset();

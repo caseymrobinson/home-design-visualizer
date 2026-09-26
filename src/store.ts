@@ -106,7 +106,7 @@ export const useStore = create<State>((set, get) => ({
   snapping: true,
   showDims: true,
   fov: 58,
-  render: { active: false, samples: 0, target: 600, phase: 'idle', snapshot: null },
+  render: { active: false, samples: 0, target: 200, phase: 'idle', snapshot: null },
   toast: null,
   past: [],
   future: [],
