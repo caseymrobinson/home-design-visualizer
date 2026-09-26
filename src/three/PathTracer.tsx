@@ -52,7 +52,16 @@ function installSeeThrough(tracer: WebGLPathTracer) {
       }`,
     );
     if (next === m.fragmentShader) console.warn('path tracer: matte patch did not apply');
-    m.fragmentShader = next;
+    // One NaN/Inf sample poisons a pixel's running average for good (it shows as black). Drop bad
+    // samples instead; test the raw bits because GPU compilers may fold isnan() away.
+    const guarded = next.replace(
+      'gl_FragColor.a *= opacity;',
+      `uvec4 fBits = floatBitsToUint( gl_FragColor ) & 0x7f800000u;
+      if ( any( equal( fBits, uvec4( 0x7f800000u ) ) ) ) gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+      gl_FragColor.a *= opacity;`,
+    );
+    if (guarded === next) console.warn('path tracer: NaN guard did not apply');
+    m.fragmentShader = guarded;
     m.needsUpdate = true;
   }
 }
@@ -115,12 +124,15 @@ export function PathTracer() {
       hide(registry.ceiling, true);
     }
     restore.push(() => seeThrough.forEach((c) => c.dispose()));
-    // One-sided sheets let shadow rays through from their front; make everything solid to light.
+    // One-sided sheets (ceiling, walls) let shadow rays through from their front; make plain painted
+    // surfaces solid to light. Glossy physical materials (clearcoat, glass) stay as authored: shading
+    // their back faces yields NaNs on some GPUs.
     const sided = new Set<THREE.Material>();
     scene.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
-      for (const mat of Array.isArray(m.material) ? m.material : [m.material]) if (mat.side === THREE.FrontSide) sided.add(mat);
+      for (const mat of Array.isArray(m.material) ? m.material : [m.material])
+        if (mat.side === THREE.FrontSide && !(mat as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial) sided.add(mat);
     });
     sided.forEach((mat) => (mat.side = THREE.DoubleSide));
     restore.push(() => sided.forEach((mat) => (mat.side = THREE.FrontSide)));
