@@ -44,6 +44,8 @@ function pack(
 
 const WOOD: Record<string, { early: string; late: string; rings: number; straight: number; rough: number; pore: number }> = {
   'white-oak': { early: '#c8aa80', late: '#a4845d', rings: 34, straight: 0.55, rough: 0.5, pore: 0.75 },
+  // Moreno Bath "Rosewood": warm red-brown laminate with a fine, fairly straight grain
+  rosewood: { early: '#7a4432', late: '#4f2a1e', rings: 44, straight: 0.8, rough: 0.46, pore: 0.82 },
   'rift-oak': { early: '#cdb18a', late: '#ac8d66', rings: 60, straight: 0.92, rough: 0.48, pore: 0.8 },
   walnut: { early: '#6f4d36', late: '#4b3222', rings: 30, straight: 0.5, rough: 0.42, pore: 0.6 },
   'ash-black': { early: '#2d2a27', late: '#1d1b19', rings: 28, straight: 0.6, rough: 0.5, pore: 0.9 },

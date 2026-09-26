@@ -3,6 +3,38 @@ import type { TileSpec } from './types';
 /** Starter tile library. Every design carries its own editable copy of the tiles it uses. */
 export const TILE_PRESETS: TileSpec[] = [
   {
+    // Floor & Decor #101488179 — Capri Oat, 12×24 matte porcelain, limestone look, ~8 mm
+    id: 'capri-oat-12x24',
+    name: 'Capri Oat 12×24',
+    width: 24,
+    height: 12,
+    thickness: 0.315,
+    pattern: 'third',
+    colors: ['#d8cdbb', '#d2c6b2', '#dcd2c2', '#cfc2ad'],
+    variation: 0.35,
+    finish: 'matte',
+    surface: 'concrete',
+    edge: 'eased',
+    groutWidth: 0.125,
+    groutColor: '#cbc1b1',
+  },
+  {
+    // Floor & Decor #101068773 — La Belle Sage, 3×12 high-gloss ceramic, 8.5 mm, soft wavy glaze
+    id: 'la-belle-sage-3x12',
+    name: 'La Belle Sage 3×12',
+    width: 12,
+    height: 3,
+    thickness: 0.335,
+    pattern: 'running',
+    colors: ['#9fae95', '#a6b49b', '#97a88d', '#aab79f'],
+    variation: 0.45,
+    finish: 'gloss',
+    surface: 'handmade',
+    edge: 'pillowed',
+    groutWidth: 0.0625,
+    groutColor: '#e1dfd6',
+  },
+  {
     id: 'limestone-12x24',
     name: 'Honed limestone',
     width: 24,

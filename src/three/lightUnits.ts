@@ -30,6 +30,7 @@ export function exposureFor(design: Design) {
     const lm = Number(it.params.lumens ?? 0);
     if (it.type === 'sconce' && l.sconces) lumens += lm;
     if (it.type === 'ceiling-light' && l.ceiling) lumens += lm;
+    if ((it.type === 'vanity' || it.type === 'linen') && l.underCabinet) lumens += (120 * it.w) / 12;
   }
   const E = sunLux(l) * sunArea * 0.05 + skyNits(l) * glassArea * 0.35 + lumens * 0.12 + 8; // metered at full brightness so the dimmer visibly dims
   return (EXPOSURE_KEY / E) * Math.pow(2, l.exposure);

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Cloud, LampCeiling, LampWallUp, Sun } from 'lucide-react';
+import { Cloud, LampCeiling, LampWallUp, PanelBottom, Sun } from 'lucide-react';
 import { useRef } from 'react';
 import type { Design, Lighting } from '../lib/types';
 import { lampColor } from '../materials/library';
@@ -112,6 +112,9 @@ export function LightPanel() {
           </Field>
           <Field label={<span style={{ display: 'flex', gap: 6, alignItems: 'center' }}><LampCeiling size={14} /> Ceiling lights</span>}>
             <Toggle on={L.ceiling} onChange={(v) => upd({ ceiling: v }, true)} />
+          </Field>
+          <Field label={<span style={{ display: 'flex', gap: 6, alignItems: 'center' }}><PanelBottom size={14} /> Under-cabinet lights</span>}>
+            <Toggle on={L.underCabinet ?? false} onChange={(v) => upd({ underCabinet: v }, true)} />
           </Field>
           <Slider label="Dimmer" value={L.dimmer} min={0.05} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onStart={checkpoint} onChange={(v) => upd({ dimmer: v })} />
           <Slider

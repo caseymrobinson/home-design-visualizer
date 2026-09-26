@@ -13,6 +13,7 @@ export const DEFAULT_LIGHTING: Lighting = {
   overcast: false,
   sconces: true,
   ceiling: true,
+  underCabinet: true,
   dimmer: 0.8,
   kelvin: 3000,
   exposure: 0,
@@ -66,8 +67,8 @@ export function defaultRoom(): Room {
       { id: 'window', kind: 'window', wall: 3, offset: 43, width: 28, height: 36, sill: 44, hinge: 'start', openAngle: 0, glass: 'frosted' },
     ],
     tileZones: [
-      { id: 'tz-back', name: 'Shower · back wall', surface: { kind: 'wall', wall: 0 }, u0: 40.5, u1: 100.5, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
-      { id: 'tz-end', name: 'Shower · valve wall', surface: { kind: 'wall', wall: 1 }, u0: 0, u1: 32, v0: 0, v1: 95, tile: 'zellige-ivory-4x4' },
+      { id: 'tz-back', name: 'Shower · back wall', surface: { kind: 'wall', wall: 0 }, u0: 40.5, u1: 100.5, v0: 0, v1: 95, tile: 'la-belle-sage-3x12' },
+      { id: 'tz-end', name: 'Shower · valve wall', surface: { kind: 'wall', wall: 1 }, u0: 0, u1: 32, v0: 0, v1: 95, tile: 'la-belle-sage-3x12' },
       {
         id: 'tz-half',
         name: 'Shower · half wall',
@@ -76,7 +77,7 @@ export function defaultRoom(): Room {
         u1: 32,
         v0: 0,
         v1: 95,
-        tile: 'zellige-ivory-4x4',
+        tile: 'la-belle-sage-3x12',
       },
       {
         id: 'tz-half-end',
@@ -86,7 +87,7 @@ export function defaultRoom(): Room {
         u1: 4,
         v0: 0,
         v1: 95,
-        tile: 'zellige-ivory-4x4',
+        tile: 'la-belle-sage-3x12',
       },
     ],
   };
@@ -96,34 +97,47 @@ export function defaultItems(room: Room): Item[] {
   const A: SurfaceRef = { kind: 'wall', wall: 0 };
   const C: SurfaceRef = { kind: 'wall', wall: 2 };
   const D: SurfaceRef = { kind: 'wall', wall: 3 };
-  const B: SurfaceRef = { kind: 'wall', wall: 1 };
   const halfA: SurfaceRef = { kind: 'partition', id: 'half-wall', face: 'a' };
   // Wall C runs from x = 100.5 back to x = 0, so u = 100.5 − x.
   const cx = (x: number) => 100.5 - x;
   // Wall D runs from y = 100 back to y = 0, so u = 100 − y.
   const dy = (y: number) => 100 - y;
+  const halfB: SurfaceRef = { kind: 'partition', id: 'half-wall', face: 'b' };
   const vanityX = 54;
+  const counter = 34; // Fortune 72 is 25½″ tall; hung so its top lands at a standard 34″
+  const vz = counter - 25.5;
   return [
-    makeItem('tub', { x: 70.5, y: 0, rot: 0, params: { drain: 'right' } }),
+    // Delta Classic 500 B23605-6032L: 59⅞ × 32 × 18, left drain → plumbing on the half-wall end
+    makeItem('tub', { x: 40.5 + 59.875 / 2, y: 0, rot: 0, w: 59.875, d: 32, h: 18, params: { drain: 'left' } }),
     makeItem('toilet', { x: 18.25, y: 0, rot: 0 }),
-    onWall(room, B, 'shower-trim', 15),
-    onWall(room, B, 'glass-panel', 29.6),
-    onWall(room, C, 'vanity', cx(vanityX)),
-    onWall(room, C, 'linen', cx(9)),
-    onWall(room, C, 'mirror', cx(vanityX - 18)),
-    onWall(room, C, 'mirror', cx(vanityX + 18)),
-    onWall(room, C, 'sconce', cx(vanityX)),
-    onWall(room, C, 'sconce', cx(vanityX - 34)),
-    onWall(room, C, 'sconce', cx(vanityX + 34)),
+    // Delta 342701-SP (10″ square raincan + wall-mount hand shower) with Arzo RP48333SS spout
+    onWall(room, halfB, 'shower-trim', 16, { params: { head: 'square', headSize: 10, handheld: 'holder', spout: 'arzo' } }),
+    onWall(room, halfB, 'glass-panel', 0.6),
+    // Moreno Bath Fortune 72 MOF72D-RW: 71 × 19.8 × 25½, two 36″ bases, four drawers, acrylic top with two basins
+    onWall(room, C, 'vanity', cx(vanityX), {
+      w: 71,
+      d: 19.8,
+      h: 25.5,
+      z: vz,
+      params: { sinks: 2, sinkStyle: 'integrated', faucet: 'delta-modern', front: 'slab', columns: 2, rows: 2, wood: 'rosewood', top: 'white-acrylic', topThickness: 1.25, pulls: 'profile' },
+    }),
+    // Moreno Bath Bohemia Lina 16 (MOBS60) in Rosewood: 15¾ × 11¾ × 59, one door
+    onWall(room, C, 'linen', cx(9), { w: 15.75, d: 11.75, h: 59, z: vz, params: { wood: 'rosewood', front: 'slab', pulls: 'profile', doors: 1, hinge: 'left' } }),
+    // FORBATH 24×48 black aluminum arched mirrors, centered over the basins
+    onWall(room, C, 'mirror', cx(vanityX - 71 / 4), { w: 24, h: 48, z: 40, params: { shape: 'arch', frame: 'black', rail: 'none' } }),
+    onWall(room, C, 'mirror', cx(vanityX + 71 / 4), { w: 24, h: 48, z: 40, params: { shape: 'arch', frame: 'black', rail: 'none' } }),
+    // Kalium 21″ frosted cylinder sconces (set of two), mounted vertically outside the mirrors
+    onWall(room, C, 'sconce', cx(vanityX - 34), { w: 3, d: 5, h: 21, z: 54, params: { style: 'tube', lumens: 800 } }),
+    onWall(room, C, 'sconce', cx(vanityX + 34), { w: 3, d: 5, h: 21, z: 54, params: { style: 'tube', lumens: 800 } }),
     onWall(room, A, 'shelf', 18.25),
     onWall(room, halfA, 'tp-holder', 26),
     onWall(room, D, 'robe-hook', dy(35)),
     onWall(room, D, 'robe-hook', dy(39.5), { params: { towel: false } }),
     makeItem('ceiling-light', { x: 54, y: 64 }),
-    makeItem('ceiling-light', { x: 70.5, y: 15 }),
+    makeItem('ceiling-light', { x: 70.5, y: 16 }),
     makeItem('ceiling-light', { x: 18, y: 22 }),
-    makeItem('rug', { x: 70.5, y: 31, rot: 0 }),
-    makeItem('vanity-decor', { x: vanityX + 2, y: 94, rot: Math.PI }),
+    makeItem('rug', { x: 70.5, y: 33, rot: 0 }),
+    makeItem('vanity-decor', { x: vanityX + 2, y: 96, rot: Math.PI, z: counter }),
     makeItem('plant', { x: 1, y: 76, rot: Math.PI / 2, params: { kind: 'olive' }, h: 42 }),
   ];
 }
@@ -134,24 +148,24 @@ export function tilesById(ids: string[]): Record<string, TileSpec> {
   return out;
 }
 
-export const LAYOUT_REV = 2;
+export const LAYOUT_REV = 3;
 
 export function defaultDesign(): Design {
   const room = defaultRoom();
   return {
     layoutRev: LAYOUT_REV,
     id: uid('design'),
-    name: 'Option A · Ivory & oak',
+    name: 'Option A · Rosewood & sage',
     updatedAt: Date.now(),
     room,
     items: defaultItems(room),
     finishes: {
-      floorTile: 'limestone-12x24',
+      floorTile: 'capri-oat-12x24',
       wallPaint: '#e9e3d8',
       paintSheen: 'eggshell',
       ceilingPaint: '#f3f1ec',
       trimPaint: '#efece6',
-      metal: 'brushed-brass',
+      metal: 'brushed-nickel',
     },
     tiles: Object.fromEntries(TILE_PRESETS.map((t) => [t.id, structuredClone(t)])),
     lighting: { ...DEFAULT_LIGHTING },

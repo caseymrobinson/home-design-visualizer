@@ -73,12 +73,22 @@ export function frontGeometry(style: FrontStyle, x0: number, x1: number, y0: num
   return parts;
 }
 
-export type PullStyle = 'edge' | 'bar' | 'knob' | 'none';
+export type PullStyle = 'profile' | 'edge' | 'bar' | 'knob' | 'none';
 
 /** Hardware for a front. `at` = where the pull sits on the front. */
 export function pullGeometry(style: PullStyle, cx: number, cy: number, zFront: number, orient: 'h' | 'v', length = 7) {
   const parts: THREE.BufferGeometry[] = [];
   if (style === 'none') return parts;
+  if (style === 'profile') {
+    // Slim aluminum channel running (almost) the full width along the top edge
+    if (orient === 'h') {
+      parts.push(box(cx - length / 2, cx + length / 2, cy - 0.7, cy, zFront, zFront + 0.06));
+      parts.push(box(cx - length / 2, cx + length / 2, cy - 0.06, cy, zFront - 0.55, zFront + 0.06));
+    } else {
+      parts.push(box(cx - 0.7, cx, cy - length / 2, cy + length / 2, zFront, zFront + 0.06));
+    }
+    return parts;
+  }
   if (style === 'edge') {
     // A slim tab that wraps the top edge of the front
     if (orient === 'h') {

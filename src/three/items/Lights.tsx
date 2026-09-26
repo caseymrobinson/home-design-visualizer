@@ -62,6 +62,20 @@ export function Sconce({ item, design }: ItemProps) {
       <mesh position={[0, cy, (shadeZ - 1.4) / 2 + 0.3]} rotation-x={Math.PI / 2} material={metal} castShadow>
         <cylinderGeometry args={[0.32, 0.32, shadeZ - 1.4, 16]} />
       </mesh>
+      {style === 'tube' && (
+        <>
+          {/* 21″ frosted cylinder on a short arm; metal caps at both ends */}
+          <mesh position={[0, h / 2, shadeZ]} material={glow}>
+            <cylinderGeometry args={[1.35, 1.35, h - 2.4, 40]} />
+          </mesh>
+          <mesh position={[0, 0.6, shadeZ]} material={metal}>
+            <cylinderGeometry args={[1.45, 1.45, 1.2, 40]} />
+          </mesh>
+          <mesh position={[0, h - 0.6, shadeZ]} material={metal}>
+            <cylinderGeometry args={[1.45, 1.45, 1.2, 40]} />
+          </mesh>
+        </>
+      )}
       {style === 'globe' && (
         <>
           <mesh position={[0, cy - 0.3, shadeZ]} material={metal}>
@@ -98,7 +112,7 @@ export function Sconce({ item, design }: ItemProps) {
       {on && (
         <pointLight
           ref={light}
-          position={[0, style === 'globe' ? cy + 2.6 : cy, shadeZ]}
+          position={[0, style === 'globe' ? cy + 2.6 : style === 'tube' ? h / 2 : cy, shadeZ]}
           color={color}
           intensity={pointCandela(lumens, L)}
           distance={0}

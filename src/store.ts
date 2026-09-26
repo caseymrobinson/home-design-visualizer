@@ -68,7 +68,18 @@ function load(): { designs: Design[]; activeId: string } {
         // Older saves predate the corrected layout (toilet/tub swap, door opposite the window).
         const fresh = defaultDesign();
         parsed.designs = parsed.designs.map((d: Design) =>
-          (d.layoutRev ?? 1) < LAYOUT_REV ? { ...d, room: fresh.room, items: fresh.items, layoutRev: LAYOUT_REV } : d,
+          (d.layoutRev ?? 1) < LAYOUT_REV
+            ? {
+                ...d,
+                room: fresh.room,
+                items: fresh.items,
+                layoutRev: LAYOUT_REV,
+                // Chosen products: tile & plumbing finish come with the layout
+                finishes: { ...d.finishes, floorTile: fresh.finishes.floorTile, metal: fresh.finishes.metal },
+                tiles: { ...fresh.tiles, ...d.tiles },
+                lighting: { ...fresh.lighting, ...d.lighting, underCabinet: d.lighting.underCabinet ?? true },
+              }
+            : d,
         );
         return parsed;
       }

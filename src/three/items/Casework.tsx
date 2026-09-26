@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { metalMaterial, porcelain, stoneMaterial, woodMaterial, worldUV, matte } from '../../materials/library';
+import { IN } from '../../lib/units';
+import type { Design } from '../../lib/types';
+import { lampColor, metalMaterial, porcelain, stoneMaterial, woodMaterial, worldUV, matte } from '../../materials/library';
 import { box, merge, roundedBox, roundedRectShape } from '../geom';
 import { frontGeometry, lathe, P, pullGeometry, subtract, tube, type FrontStyle, type ItemProps, type PullStyle } from './common';
 
@@ -17,6 +19,25 @@ function useGeo(make: () => THREE.BufferGeometry, deps: unknown[]) {
 function faucetGeometry(kind: string, tall: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const lift = tall ? 6 : 0;
+  if (kind === 'delta-modern') {
+    // Delta Modern 567LF: 6⅞″ overall, 4⅜″ spout height, 4½″ reach. Slim round body,
+    // flat angular spout, blade lever on top.
+    const base = new THREE.CylinderGeometry(1.05, 1.1, 0.25, 40);
+    base.translate(0, 0.12 + lift, 0);
+    const body = new THREE.CylinderGeometry(0.82, 0.9, 5.2, 40);
+    body.translate(0, 2.6 + lift, 0);
+    const spout = roundedBox(1.25, 0.55, 4.6, 0.18, 2);
+    spout.translate(0, 4.75 + lift, 2.3);
+    const outlet = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 24);
+    outlet.translate(0, 4.43 + lift, 4.1);
+    const cap = new THREE.CylinderGeometry(0.82, 0.82, 0.2, 40);
+    cap.translate(0, 5.3 + lift, 0);
+    const lever = roundedBox(0.5, 0.28, 2.6, 0.1, 2);
+    lever.rotateX(0.62);
+    lever.translate(0, 6.05 + lift, -0.8);
+    parts.push(base, body, spout, outlet, cap, lever);
+    return merge(parts);
+  }
   if (kind === 'wall') {
     const plate = new THREE.CylinderGeometry(1.1, 1.1, 0.35, 32);
     plate.rotateX(Math.PI / 2);
@@ -105,7 +126,7 @@ export function Vanity({ item, design }: ItemProps) {
 
   const carcass = useGeo(() => {
     let shell = box(-w / 2, w / 2, 0, ch, 0, frontZ, 'horizontal');
-    if (sinkStyle === 'undermount') {
+    if (sinkStyle !== 'vessel') {
       // Hollow out room for each basin so the bowl isn't buried in the cabinet.
       const cutters = sinkXs.map((sx) => {
         const c = box(sx - bowl.iw / 2 - 1, sx + bowl.iw / 2 + 1, ch - bowl.depth - 1.5, ch + 1, sinkZ - bowl.id / 2 - 1, sinkZ + bowl.id / 2 + 1);
@@ -137,14 +158,14 @@ export function Vanity({ item, design }: ItemProps) {
       for (let r = 0; r < rows; r++) {
         const cx = -w / 2 + (c + 0.5) * colW;
         const top = (r + 1) * rowH - REVEAL / 2;
-        const len = Math.min(10, colW * 0.45);
-        parts.push(...pullGeometry(pulls, cx, pulls === 'edge' ? top : top - 1.6, frontZ + frontT, 'h', len));
+        const len = pulls === 'profile' ? colW - 2 : Math.min(10, colW * 0.45);
+        parts.push(...pullGeometry(pulls, cx, pulls === 'edge' || pulls === 'profile' ? top : top - 1.6, frontZ + frontT, 'h', len));
       }
     // Faucets
     for (const sx of sinkXs) {
       const f = faucetGeometry(faucet, sinkStyle === 'vessel');
       if (faucet === 'wall') f.translate(sx, h + (sinkStyle === 'vessel' ? 13 : 8), 0);
-      else f.translate(sx, h, sinkZ - bowl.id / 2 - 1.7);
+      else f.translate(sx, h, sinkZ - bowl.id / 2 - (faucet === 'delta-modern' ? 0.3 : 1.7));
       parts.push(f);
       // Drain
       const drain = new THREE.CylinderGeometry(0.85, 0.85, 0.12, 24);
@@ -156,7 +177,7 @@ export function Vanity({ item, design }: ItemProps) {
 
   const top = useGeo(() => {
     const slab = box(-w / 2, w / 2, ch, h, 0, d);
-    if (sinkStyle !== 'undermount') return worldUV(slab, 'horizontal');
+    if (sinkStyle === 'vessel') return worldUV(slab, 'horizontal');
     const cutters = sinkXs.map((sx) => {
       const c = new THREE.ExtrudeGeometry(roundedRectShape(bowl.iw, bowl.id, 1.6), { depth: tt + 2, bevelEnabled: false, curveSegments: 10 });
       c.rotateX(-Math.PI / 2);
@@ -205,8 +226,29 @@ export function Vanity({ item, design }: ItemProps) {
     <group>
       <mesh geometry={carcass} material={wood} castShadow receiveShadow />
       <mesh geometry={top} material={stone} castShadow receiveShadow />
-      <mesh geometry={basins} material={porcelain()} castShadow receiveShadow />
+      <mesh geometry={basins} material={sinkStyle === 'integrated' ? stone : porcelain()} castShadow receiveShadow />
       <mesh geometry={hardware} material={metal} castShadow />
+      <UnderLight design={design} w={w} d={d} />
+    </group>
+  );
+}
+
+/** LED tape under a floating cabinet: a glowing strip plus a downward area light washing the floor. */
+function UnderLight({ design, w, d }: { design: Design; w: number; d: number }) {
+  const L = design.lighting;
+  if (!L.underCabinet) return null;
+  const color = lampColor(L.kelvin);
+  const lumensPerFoot = 120;
+  const lm = (lumensPerFoot * (w - 3)) / 12;
+  const areaM2 = (w - 3) * IN * (1.2 * IN);
+  const nits = (lm / (Math.PI * areaM2)) * L.dimmer;
+  return (
+    <group position={[0, -0.05, d - 2.2]}>
+      <mesh rotation-x={Math.PI / 2}>
+        <planeGeometry args={[w - 3, 0.5]} />
+        <meshStandardMaterial color="#000000" emissive={color} emissiveIntensity={Math.min(nits, 4000)} />
+      </mesh>
+      <rectAreaLight width={(w - 3) * IN} height={1.2 * IN} intensity={nits} color={color} rotation-x={-Math.PI / 2} />
     </group>
   );
 }
@@ -239,7 +281,7 @@ export function Linen({ item, design }: ItemProps) {
       const y0 = REVEAL + i * (doorH + REVEAL);
       // The pull sits on the latch edge, near the middle of a comfortable reach.
       const cy = Math.min(y0 + doorH - 4, Math.max(y0 + 4, i === 0 && doors > 1 ? y0 + doorH - 5 : y0 + doorH * 0.5));
-      if (pulls === 'edge') parts.push(...pullGeometry('edge', sx * (w / 2 - REVEAL / 2), cy, frontZ + frontT, 'v'));
+      if (pulls === 'edge' || pulls === 'profile') parts.push(...pullGeometry(pulls === 'profile' ? 'profile' : 'edge', sx * (w / 2 - REVEAL / 2), cy, frontZ + frontT, 'v', doorH * 0.35));
       else parts.push(...pullGeometry(pulls, sx * (w / 2 - 1.6), cy, frontZ + frontT, 'v', Math.min(10, doorH * 0.3)));
     }
     return merge(parts);
@@ -249,6 +291,7 @@ export function Linen({ item, design }: ItemProps) {
     <group>
       <mesh geometry={body} material={wood} castShadow receiveShadow />
       {hw.attributes.position && <mesh geometry={hw} material={metal} castShadow />}
+      <UnderLight design={design} w={w} d={d} />
     </group>
   );
 }

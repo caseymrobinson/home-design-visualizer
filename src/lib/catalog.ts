@@ -23,6 +23,7 @@ export interface CatalogEntry {
 const opt = (...pairs: [string, string][]) => pairs.map(([value, label]) => ({ value, label }));
 
 export const WOODS = opt(
+  ['rosewood', 'Rosewood'],
   ['white-oak', 'White oak'],
   ['rift-oak', 'Rift-sawn oak'],
   ['walnut', 'Walnut'],
@@ -31,6 +32,7 @@ export const WOODS = opt(
 );
 
 export const COUNTERTOPS = opt(
+  ['white-acrylic', 'White acrylic (integrated)'],
   ['white-quartz', 'White quartz'],
   ['calacatta', 'Calacatta marble'],
   ['carrara', 'Carrara marble'],
@@ -40,7 +42,7 @@ export const COUNTERTOPS = opt(
 );
 
 const FRONTS = opt(['slab', 'Flat slab'], ['shaker', 'Shaker'], ['fluted', 'Fluted'], ['reeded', 'Reeded (fine)']);
-const PULLS = opt(['edge', 'Edge pulls'], ['bar', 'Bar pulls'], ['knob', 'Knobs'], ['none', 'Push to open']);
+const PULLS = opt(['profile', 'Aluminum profile (full width)'], ['edge', 'Edge pulls'], ['bar', 'Bar pulls'], ['knob', 'Knobs'], ['none', 'Push to open']);
 
 export const CATALOG: CatalogEntry[] = [
   {
@@ -71,8 +73,8 @@ export const CATALOG: CatalogEntry[] = [
     dims: ['w', 'd', 'h', 'z'],
     fields: [
       { key: 'sinks', label: 'Sinks', kind: 'select', options: opt(['1', 'One'], ['2', 'Two']) },
-      { key: 'sinkStyle', label: 'Sink style', kind: 'select', options: opt(['undermount', 'Undermount'], ['vessel', 'Vessel']) },
-      { key: 'faucet', label: 'Faucet', kind: 'select', options: opt(['single', 'Single hole'], ['widespread', 'Widespread'], ['wall', 'Wall mount']) },
+      { key: 'sinkStyle', label: 'Sink style', kind: 'select', options: opt(['integrated', 'Integrated (same as top)'], ['undermount', 'Undermount'], ['vessel', 'Vessel']) },
+      { key: 'faucet', label: 'Faucet', kind: 'select', options: opt(['delta-modern', 'Delta Modern 567LF'], ['single', 'Gooseneck single hole'], ['widespread', 'Widespread'], ['wall', 'Wall mount']) },
       { key: 'front', label: 'Door style', kind: 'select', options: FRONTS },
       { key: 'columns', label: 'Columns', kind: 'number', min: 1, max: 6, step: 1, unit: '' },
       { key: 'rows', label: 'Drawers per column', kind: 'number', min: 1, max: 4, step: 1, unit: '' },
@@ -147,7 +149,13 @@ export const CATALOG: CatalogEntry[] = [
         key: 'handheld',
         label: 'Handheld shower',
         kind: 'select',
-        options: opt(['none', 'None (fixed head)'], ['combo', 'Fixed head + handheld on slide bar'], ['slidebar', 'Handheld on slide bar only']),
+        options: opt(['none', 'None (fixed head)'], ['holder', 'Fixed head + handheld on wall holder'], ['combo', 'Fixed head + handheld on slide bar'], ['slidebar', 'Handheld on slide bar only']),
+      },
+      {
+        key: 'spout',
+        label: 'Tub spout',
+        kind: 'select',
+        options: opt(['arzo', 'Delta Arzo (square)'], ['round', 'Rounded']),
       },
       { key: 'head', label: 'Head shape', kind: 'select', options: opt(['round', 'Round'], ['square', 'Square']) },
       { key: 'headSize', label: 'Head diameter', kind: 'number', min: 4, max: 12, step: 0.5, unit: 'in' },
@@ -207,7 +215,7 @@ export const CATALOG: CatalogEntry[] = [
     defaults: { w: 5, d: 6.5, h: 11, z: 58, params: { style: 'globe', lumens: 450 } },
     dims: ['z'],
     fields: [
-      { key: 'style', label: 'Style', kind: 'select', options: opt(['globe', 'Opal globe'], ['cylinder', 'Cylinder'], ['cone', 'Pleated cone']) },
+      { key: 'style', label: 'Style', kind: 'select', options: opt(['tube', '21″ frosted cylinder'], ['globe', 'Opal globe'], ['cylinder', 'Short cylinder'], ['cone', 'Pleated cone']) },
       { key: 'lumens', label: 'Brightness (lm)', kind: 'number', min: 100, max: 1500, step: 50, unit: '' },
     ],
   },

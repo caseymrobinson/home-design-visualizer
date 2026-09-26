@@ -139,21 +139,49 @@ export function ShowerTrim({ item, design }: ItemProps) {
   const head = P(item, 'head', 'round');
   const size = P(item, 'headSize', 8);
   const handheld = P(item, 'handheld', 'none');
+  const spoutStyle = P(item, 'spout', 'round');
   const fixed = handheld !== 'slidebar';
   const geo = useGeo(() => {
     const parts: THREE.BufferGeometry[] = [];
     // Tub spout
-    const flange = new THREE.CylinderGeometry(1.2, 1.2, 0.4, 28);
-    flange.rotateX(Math.PI / 2);
-    flange.translate(0, 2, 0.2);
-    const spout = roundedBox(1.9, 1.7, 6.5, 0.8, 3);
-    spout.translate(0, 2, 3.4);
-    parts.push(flange, spout);
+    if (spoutStyle === 'arzo') {
+      // Delta Arzo RP48333: 7″ long × 2½″ tall, 6⅜″ reach; squared body with a raked nose.
+      const prof = new THREE.Shape();
+      prof.moveTo(0, -1.25);
+      prof.lineTo(6.375, -1.25);
+      prof.lineTo(6.375, -0.35);
+      prof.lineTo(5.2, 1.25);
+      prof.lineTo(0, 1.25);
+      prof.lineTo(0, -1.25);
+      const sp = new THREE.ExtrudeGeometry(prof, { depth: 2.2, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 2 });
+      sp.rotateY(-Math.PI / 2);
+      sp.translate(1.1, 2, 0);
+      sp.computeVertexNormals();
+      parts.push(sp);
+    } else {
+      const flange = new THREE.CylinderGeometry(1.2, 1.2, 0.4, 28);
+      flange.rotateX(Math.PI / 2);
+      flange.translate(0, 2, 0.2);
+      const spout = roundedBox(1.9, 1.7, 6.5, 0.8, 3);
+      spout.translate(0, 2, 3.4);
+      parts.push(flange, spout);
+    }
     // Valve trim
     const valveY = 26;
-    const esc = new THREE.CylinderGeometry(3.4, 3.4, 0.35, 48);
-    esc.rotateX(Math.PI / 2);
-    esc.translate(0, valveY, 0.18);
+    let esc: THREE.BufferGeometry;
+    if (head === 'square') {
+      // Delta Modern Monitor 14 trim: square plate with an integrated diverter knob
+      esc = roundedBox(6.75, 6.75, 0.4, 0.15, 2);
+      esc.translate(0, valveY, 0.2);
+      const div = new THREE.CylinderGeometry(0.5, 0.55, 0.9, 24);
+      div.rotateX(Math.PI / 2);
+      div.translate(0, valveY - 2.3, 0.8);
+      parts.push(div);
+    } else {
+      esc = new THREE.CylinderGeometry(3.4, 3.4, 0.35, 48);
+      esc.rotateX(Math.PI / 2);
+      esc.translate(0, valveY, 0.18);
+    }
     const hub = new THREE.CylinderGeometry(0.9, 1.1, 1.8, 32);
     hub.rotateX(Math.PI / 2);
     hub.translate(0, valveY, 1.2);
@@ -161,7 +189,33 @@ export function ShowerTrim({ item, design }: ItemProps) {
     lever.rotateZ(Math.PI / 2);
     lever.translate(1.8, valveY, 2);
     parts.push(esc, hub, lever);
-    if (handheld !== 'none') {
+    if (handheld === 'holder') {
+      // Wall-mount hand shower: combined elbow/holder beside the valve, square wand, hose looping below
+      const bx = 7;
+      const hy = valveY + 20;
+      const holder = roundedBox(1.6, 2.4, 1.8, 0.35, 2);
+      holder.translate(bx, hy, 0.9);
+      const wand = roundedBox(1.1, 7.5, 0.9, 0.35, 3);
+      wand.rotateX(-0.25);
+      wand.translate(bx, hy + 1.8, 2.2);
+      const hhHead = roundedBox(2.9, 0.7, 3.4, 0.3, 3);
+      hhHead.rotateX(-0.25 - 1.2);
+      hhHead.translate(bx, hy + 5.8, 3.4);
+      const hose = tube(
+        [
+          [bx, hy - 1.2, 1.4],
+          [bx + 0.6, hy - 14, 2.6],
+          [bx + 2.2, hy - 22, 3.4],
+          [bx + 3, hy - 14, 3.8],
+          [bx + 1.2, hy - 5, 3.2],
+          [bx, hy - 1.8, 2.8],
+        ],
+        0.28,
+        64,
+      );
+      parts.push(holder, wand, hhHead, hose);
+    }
+    if (handheld === 'combo' || handheld === 'slidebar') {
       // Slide bar beside the valve, handheld resting in its bracket, hose to a wall elbow
       const bx = 6.5;
       const y0 = valveY + 6;
@@ -235,7 +289,7 @@ export function ShowerTrim({ item, design }: ItemProps) {
     hd.translate(0, armY - 1.8, 8.6 + (head === 'square' ? 0 : 0));
     parts.push(hd);
     return merge(parts);
-  }, [h, head, size, handheld]);
+  }, [h, head, size, handheld, spoutStyle]);
   const face = useGeo(() => {
     const r = size / 2 - 0.35;
     const g = head === 'square' ? new THREE.BoxGeometry(size - 0.6, 0.05, size - 0.6) : new THREE.CylinderGeometry(r, r, 0.05, 64);

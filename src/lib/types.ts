@@ -105,6 +105,7 @@ export interface Lighting {
   overcast: boolean;
   sconces: boolean;
   ceiling: boolean;
+  underCabinet?: boolean;
   dimmer: number; // 0–1
   kelvin: number;
   exposure: number; // EV offset

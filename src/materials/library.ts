@@ -163,6 +163,7 @@ export function tileMaterial(spec: TileSpec): THREE.MeshPhysicalMaterial {
 
 const STONES: Record<string, Partial<TileSpec>> = {
   'white-quartz': { colors: ['#eeebe5'], surface: 'quartz', vein: '#b9b4ad', finish: 'gloss' },
+  'white-acrylic': { colors: ['#f6f5f2'], surface: 'flat', finish: 'gloss' },
   calacatta: { colors: ['#f2efe9'], surface: 'marble', vein: '#8a8178', finish: 'satin' },
   carrara: { colors: ['#e6e5e2'], surface: 'marble', vein: '#a19f9b', finish: 'satin' },
   soapstone: { colors: ['#3f4442'], surface: 'marble', vein: '#7f8683', finish: 'matte' },
@@ -207,6 +208,7 @@ export function woodMaterial(key: string, paint = '#6b7a6b') {
   if (m) return m;
   const base: Record<string, string> = {
     'white-oak': '#bf9f76',
+    rosewood: '#653829',
     'rift-oak': '#c7aa82',
     walnut: '#5e412d',
     'ash-black': '#262422',

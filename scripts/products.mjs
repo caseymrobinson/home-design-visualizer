@@ -1,0 +1,16 @@
+import { chromium } from 'playwright';
+import { writeFileSync } from 'fs';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 1000, height: 640 } });
+p.on('pageerror', e => console.log('ERR', e.message));
+p.on('console', m => { if (m.type()==='error') console.log('CERR', m.text().slice(0,200)); });
+await p.goto('http://localhost:5173/?pdb=1' + (process.env.Q||''));
+await p.waitForTimeout(40000);
+const shot = async (n) => { const d = await p.evaluate(() => new Promise(r => requestAnimationFrame(() => r(document.querySelector('canvas').toDataURL())))); writeFileSync(`screenshots/prod-${n}.png`, Buffer.from(d.split(',')[1],'base64')); };
+await shot('orbit');
+const go = (x, y, lx, ly, lh) => p.evaluate((a) => window.__camera.goto({ id: 'x', label: '', x: a[0], y: a[1], lookX: a[2], lookY: a[3], lookH: a[4] }), [x, y, lx, ly, lh]);
+await p.evaluate(() => window.__store.getState().setMode('walk'));
+await p.waitForTimeout(8000);
+await go(54, 52, 54, 100, 50); await p.waitForTimeout(40000); await shot('vanity');
+await go(78, 62, 50, 14, 45); await p.waitForTimeout(40000); await shot('shower');
+await b.close();
