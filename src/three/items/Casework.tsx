@@ -20,22 +20,19 @@ function faucetGeometry(kind: string, tall: boolean) {
   const parts: THREE.BufferGeometry[] = [];
   const lift = tall ? 6 : 0;
   if (kind === 'delta-modern') {
-    // Delta Modern 567LF: 6⅞″ overall, 4⅜″ spout height, 4½″ reach. Slim round body,
-    // flat angular spout, blade lever on top.
-    const base = new THREE.CylinderGeometry(1.05, 1.1, 0.25, 40);
-    base.translate(0, 0.12 + lift, 0);
-    const body = new THREE.CylinderGeometry(0.82, 0.9, 5.2, 40);
-    body.translate(0, 2.6 + lift, 0);
-    const spout = roundedBox(1.25, 0.55, 4.6, 0.18, 2);
-    spout.translate(0, 4.75 + lift, 2.3);
-    const outlet = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 24);
-    outlet.translate(0, 4.43 + lift, 4.1);
-    const cap = new THREE.CylinderGeometry(0.82, 0.82, 0.2, 40);
-    cap.translate(0, 5.3 + lift, 0);
-    const lever = roundedBox(0.5, 0.28, 2.6, 0.1, 2);
-    lever.rotateX(0.62);
-    lever.translate(0, 6.05 + lift, -0.8);
-    parts.push(base, body, spout, outlet, cap, lever);
+    // Delta 567LF (from product photo): square base plate, square column, flat blade spout
+    // off the top, and a blade lever on a square block, all crisp brushed stainless.
+    const y = lift;
+    const plate = box(-0.95, 0.95, y, y + 0.25, -0.95, 0.95);
+    const col = box(-0.7, 0.7, y + 0.25, y + 4.9, -0.7, 0.7);
+    const spout = box(-0.62, 0.62, y + 4.35, y + 4.9, -0.2, 6.0);
+    const outlet = new THREE.CylinderGeometry(0.33, 0.33, 0.1, 24);
+    outlet.translate(0, y + 4.3, 5.35);
+    const collar = new THREE.CylinderGeometry(0.62, 0.62, 0.12, 32);
+    collar.translate(0, y + 4.96, 0);
+    const block = box(-0.62, 0.62, y + 5.02, y + 6.875, -0.62, 0.62);
+    const blade = box(-0.62, 0.62, y + 6.6, y + 6.875, 0.62, 4.6);
+    parts.push(plate, col, spout, outlet, collar, block, blade);
     return merge(parts);
   }
   if (kind === 'wall') {
@@ -115,6 +112,7 @@ export function Vanity({ item, design }: ItemProps) {
   const cols = Math.max(1, Math.round(P(item, 'columns', 3)));
   const rows = Math.max(1, Math.round(P(item, 'rows', 2)));
   const pulls = P(item, 'pulls', 'edge') as PullStyle;
+  const gap = P(item, 'reveal', REVEAL);
   const wood = woodMaterial(P(item, 'wood', 'white-oak'), P(item, 'paint', '#5b6b5d'));
   const metal = metalMaterial(design.finishes.metal);
   const stone = stoneMaterial(P(item, 'top', 'white-quartz'));
@@ -142,13 +140,14 @@ export function Vanity({ item, design }: ItemProps) {
         const x0 = -w / 2 + c * colW + REVEAL / 2;
         const x1 = -w / 2 + (c + 1) * colW - REVEAL / 2;
         const rowH = ch / rows;
-        const y0 = r * rowH + REVEAL / 2;
-        const y1 = (r + 1) * rowH - REVEAL / 2;
+        // Finger-pull grooves read as a deeper reveal above each drawer
+        const y0 = r * rowH + (r === 0 ? REVEAL / 2 : gap / 2);
+        const y1 = (r + 1) * rowH - gap / 2;
         parts.push(...frontGeometry(front, x0, x1, y0, y1, frontZ, frontT));
       }
     }
     return worldUV(merge(parts), 'horizontal');
-  }, [w, d, h, ch, cols, rows, front, frontZ, sinkStyle, sinks]);
+  }, [w, d, h, ch, cols, rows, front, frontZ, sinkStyle, sinks, gap]);
 
   const hardware = useGeo(() => {
     const parts: THREE.BufferGeometry[] = [];
@@ -165,7 +164,7 @@ export function Vanity({ item, design }: ItemProps) {
     for (const sx of sinkXs) {
       const f = faucetGeometry(faucet, sinkStyle === 'vessel');
       if (faucet === 'wall') f.translate(sx, h + (sinkStyle === 'vessel' ? 13 : 8), 0);
-      else f.translate(sx, h, sinkZ - bowl.id / 2 - (faucet === 'delta-modern' ? 0.3 : 1.7));
+      else f.translate(sx, h, sinkZ - bowl.id / 2 - (faucet === 'delta-modern' ? 1.3 : 1.7));
       parts.push(f);
       // Drain
       const drain = new THREE.CylinderGeometry(0.85, 0.85, 0.12, 24);
@@ -263,22 +262,23 @@ export function Linen({ item, design }: ItemProps) {
   const metal = metalMaterial(design.finishes.metal);
   const frontT = 0.75;
   const frontZ = d - frontT;
-  const doorH = (h - REVEAL * (doors + 1)) / doors;
+  const gap = P(item, 'reveal', REVEAL);
+  const doorH = (h - REVEAL * 2 - gap * (doors - 1)) / doors;
 
   const body = useGeo(() => {
     const parts = [box(-w / 2, w / 2, 0, h, 0, frontZ)];
     for (let i = 0; i < doors; i++) {
-      const y0 = REVEAL + i * (doorH + REVEAL);
+      const y0 = REVEAL + i * (doorH + gap);
       parts.push(...frontGeometry(front, -w / 2 + REVEAL / 2, w / 2 - REVEAL / 2, y0, y0 + doorH, frontZ, frontT));
     }
     return worldUV(merge(parts), 'vertical');
-  }, [w, d, h, front, doors]);
+  }, [w, d, h, front, doors, gap]);
 
   const hw = useGeo(() => {
     const parts: THREE.BufferGeometry[] = [];
     const sx = hinge === 'left' ? 1 : -1;
     for (let i = 0; i < doors; i++) {
-      const y0 = REVEAL + i * (doorH + REVEAL);
+      const y0 = REVEAL + i * (doorH + gap);
       // The pull sits on the latch edge, near the middle of a comfortable reach.
       const cy = Math.min(y0 + doorH - 4, Math.max(y0 + 4, i === 0 && doors > 1 ? y0 + doorH - 5 : y0 + doorH * 0.5));
       if (pulls === 'edge' || pulls === 'profile') parts.push(...pullGeometry(pulls === 'profile' ? 'profile' : 'edge', sx * (w / 2 - REVEAL / 2), cy, frontZ + frontT, 'v', doorH * 0.35));

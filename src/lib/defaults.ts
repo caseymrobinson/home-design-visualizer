@@ -119,10 +119,10 @@ export function defaultItems(room: Room): Item[] {
       d: 19.8,
       h: 25.5,
       z: vz,
-      params: { sinks: 2, sinkStyle: 'integrated', faucet: 'delta-modern', front: 'slab', columns: 2, rows: 2, wood: 'rosewood', top: 'white-acrylic', topThickness: 1.25, pulls: 'profile' },
+      params: { sinks: 2, sinkStyle: 'integrated', faucet: 'delta-modern', front: 'slab', columns: 2, rows: 2, wood: 'rosewood', top: 'white-acrylic', topThickness: 4.25, pulls: 'none', reveal: 0.6 },
     }),
     // Moreno Bath Bohemia Lina 16 (MOBS60) in Rosewood: 15¾ × 11¾ × 59, one door
-    onWall(room, C, 'linen', cx(9), { w: 15.75, d: 11.75, h: 59, z: vz, params: { wood: 'rosewood', front: 'slab', pulls: 'profile', doors: 1, hinge: 'left' } }),
+    onWall(room, C, 'linen', cx(9), { w: 15.75, d: 11.75, h: 59, z: vz, params: { wood: 'rosewood', front: 'slab', pulls: 'none', doors: 2, hinge: 'left', reveal: 0.6 } }),
     // FORBATH 24×48 black aluminum arched mirrors, centered over the basins
     onWall(room, C, 'mirror', cx(vanityX - 71 / 4), { w: 24, h: 48, z: 40, params: { shape: 'arch', frame: 'black', rail: 'none' } }),
     onWall(room, C, 'mirror', cx(vanityX + 71 / 4), { w: 24, h: 48, z: 40, params: { shape: 'arch', frame: 'black', rail: 'none' } }),
@@ -148,7 +148,7 @@ export function tilesById(ids: string[]): Record<string, TileSpec> {
   return out;
 }
 
-export const LAYOUT_REV = 3;
+export const LAYOUT_REV = 4;
 
 export function defaultDesign(): Design {
   const room = defaultRoom();

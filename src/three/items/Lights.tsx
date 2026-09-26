@@ -56,23 +56,27 @@ export function Sconce({ item, design }: ItemProps) {
   return (
     <group>
       {/* Backplate + arm */}
-      <mesh position={[0, cy, 0.2]} rotation-x={Math.PI / 2} material={metal} castShadow>
+      <mesh visible={style !== 'tube'} position={[0, cy, 0.2]} rotation-x={Math.PI / 2} material={metal} castShadow>
         <cylinderGeometry args={[2.3, 2.3, 0.4, 40]} />
       </mesh>
-      <mesh position={[0, cy, (shadeZ - 1.4) / 2 + 0.3]} rotation-x={Math.PI / 2} material={metal} castShadow>
+      <mesh visible={style !== 'tube'} position={[0, cy, (shadeZ - 1.4) / 2 + 0.3]} rotation-x={Math.PI / 2} material={metal} castShadow>
         <cylinderGeometry args={[0.32, 0.32, shadeZ - 1.4, 16]} />
       </mesh>
       {style === 'tube' && (
         <>
-          {/* 21″ frosted cylinder on a short arm; metal caps at both ends */}
-          <mesh position={[0, h / 2, shadeZ]} material={glow}>
-            <cylinderGeometry args={[1.35, 1.35, h - 2.4, 40]} />
+          {/* Kalium (from photo): two frosted tubes, up and down, from a curved brushed-nickel clip */}
+          <mesh position={[0, h * 0.75 + 0.9, shadeZ]} material={glow}>
+            <cylinderGeometry args={[1.15, 1.15, h / 2 - 1.8, 40]} />
           </mesh>
-          <mesh position={[0, 0.6, shadeZ]} material={metal}>
-            <cylinderGeometry args={[1.45, 1.45, 1.2, 40]} />
+          <mesh position={[0, h * 0.25 - 0.9, shadeZ]} material={glow}>
+            <cylinderGeometry args={[1.15, 1.15, h / 2 - 1.8, 40]} />
           </mesh>
-          <mesh position={[0, h - 0.6, shadeZ]} material={metal}>
-            <cylinderGeometry args={[1.45, 1.45, 1.2, 40]} />
+          {/* half-round clip wrapping behind the tubes */}
+          <mesh position={[0, h / 2, shadeZ]} material={metal}>
+            <cylinderGeometry args={[1.3, 1.3, 3.6, 40, 1, true, -Math.PI * 0.62, Math.PI * 1.24]} />
+          </mesh>
+          <mesh position={[0, h / 2, (shadeZ - 1.3) / 2]} material={metal}>
+            <boxGeometry args={[2.2, 3.6, shadeZ - 1.1]} />
           </mesh>
         </>
       )}

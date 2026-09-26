@@ -42,10 +42,11 @@ function pack(
   return { width: W, height: H, pw, ph, albedo, normal, rough: r };
 }
 
-const WOOD: Record<string, { early: string; late: string; rings: number; straight: number; rough: number; pore: number }> = {
+const WOOD: Record<string, { early: string; late: string; rings: number; straight: number; rough: number; pore: number; knots?: number }> = {
   'white-oak': { early: '#c8aa80', late: '#a4845d', rings: 34, straight: 0.55, rough: 0.5, pore: 0.75 },
   // Moreno Bath "Rosewood": warm red-brown laminate with a fine, fairly straight grain
-  rosewood: { early: '#7a4432', late: '#4f2a1e', rings: 44, straight: 0.8, rough: 0.46, pore: 0.82 },
+  // Moreno Bath "Rosewood" is a rustic brown oak laminate: knotty, cathedral grain, dark streaks
+  rosewood: { early: '#86613f', late: '#4c3322', rings: 26, straight: 0.45, rough: 0.55, pore: 0.62, knots: 7 },
   'rift-oak': { early: '#cdb18a', late: '#ac8d66', rings: 60, straight: 0.92, rough: 0.48, pore: 0.8 },
   walnut: { early: '#6f4d36', late: '#4b3222', rings: 30, straight: 0.5, rough: 0.42, pore: 0.6 },
   'ash-black': { early: '#2d2a27', late: '#1d1b19', rings: 28, straight: 0.6, rough: 0.5, pore: 0.9 },
@@ -75,7 +76,22 @@ export function generateWood(key: string, paint?: string): TileMaps {
       const warp = fbm(u * 4, v * 1, 4, seed, 4, 1);
       const drift = fbm(u * 2, v * 3, 3, seed + 11, 2, 3);
       const cathedral = (1 - spec.straight) * Math.pow(Math.abs(Math.sin(v * Math.PI * 2 + warp * 2)), 3) * 0.6;
-      const g = u * spec.rings + (warp - 0.5) * 2.2 * (1 - spec.straight * 0.7) + (drift - 0.5) * 0.8 + cathedral * 2;
+      // Knots: rings bulge around each one, cores go dark (positions tile with the plank)
+      let knot = 0;
+      let bend = 0;
+      for (let k = 0; k < (spec.knots ?? 0); k++) {
+        const kx = ((Math.sin(k * 12.9898 + seed) * 43758.5453) % 1 + 1) % 1;
+        const ky = ((Math.sin(k * 78.233 + seed) * 12543.123) % 1 + 1) % 1;
+        const size = 0.6 + ((Math.sin(k * 3.7 + seed) * 9173.1) % 1 + 1) % 1;
+        let dx = u - kx;
+        let dy = v - ky;
+        dx -= Math.round(dx);
+        dy -= Math.round(dy);
+        const r = Math.hypot(dx, dy * 0.45) / size;
+        bend += Math.exp(-(r * r) / 0.0045) * 1.6;
+        knot = Math.max(knot, 1 - smoothstep(0.012, 0.026, r));
+      }
+      const g = u * spec.rings + (warp - 0.5) * 2.2 * (1 - spec.straight * 0.7) + (drift - 0.5) * 0.8 + cathedral * 2 + bend;
       const ring = g - Math.floor(g);
       const late = smoothstep(0.55, 0.92, ring) * (1 - smoothstep(0.95, 1, ring));
       const streak = valueNoise(u * 220, v * 6, seed + 3, 220, 6);
@@ -89,7 +105,11 @@ export function generateWood(key: string, paint?: string): TileMaps {
         height[i] = late * 0.002 + pore * 0.002;
         rough[i] = 0.45;
       } else {
-        const t = late * 0.85 + pore * 0.5;
+        let t = late * 0.85 + pore * 0.5;
+        if (spec.knots) {
+          t += knot * 0.9 + (fbm(u * 3, v * 8, 4, seed + 21, 3, 8) - 0.5) * 0.5; // dark cores + rustic tonal streaks
+          t = Math.min(1.2, Math.max(0, t));
+        }
         rgb[i * 3] = lerp(e[0], l[0], t) * tone;
         rgb[i * 3 + 1] = lerp(e[1], l[1], t) * tone;
         rgb[i * 3 + 2] = lerp(e[2], l[2], t) * tone;
