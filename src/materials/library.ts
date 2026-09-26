@@ -216,9 +216,9 @@ export function woodMaterial(key: string, paint = '#6b7a6b') {
   m = new THREE.MeshPhysicalMaterial({
     color: key === 'painted' ? paint : (base[key] ?? '#bf9f76'),
     roughness: 0.5,
-    sheen: key === 'painted' ? 0 : 0.15,
-    sheenRoughness: 0.6,
-    sheenColor: new THREE.Color('#ffffff'),
+    // A thin satin lacquer. (A white sheen lobe read fine in raster but turned grazing faces pink when path traced.)
+    clearcoat: key === 'painted' ? 0 : 0.12,
+    clearcoatRoughness: 0.45,
   });
   woodCache.set(k, m);
   const mat = m;

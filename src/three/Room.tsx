@@ -379,6 +379,15 @@ function Wall({ design, s, t, index }: { design: Design; s: Surface; t: number; 
     };
   }, [index]);
 
+  // The section-cut cap is a raster stand-in; the path tracer renders the full wall.
+  useEffect(() => {
+    const c = cap.current;
+    registry.rasterOnly.add(c);
+    return () => {
+      registry.rasterOnly.delete(c);
+    };
+  }, []);
+
   useFrame((_, dt) => {
     const mode = useStore.getState().mode;
     const cx = camera.position.x / IN - s.origin.x;
