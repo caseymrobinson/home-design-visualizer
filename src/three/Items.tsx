@@ -7,7 +7,7 @@ import { findSurface } from '../lib/geometry';
 import type { Design, Item } from '../lib/types';
 import { IN } from '../lib/units';
 import { useStore } from '../store';
-import { ITEM_COMPONENTS } from './items';
+import { ITEM_COMPONENTS } from './items/index';
 import { hitPlane, hitSurfaces, itemOnSurface, placeOnFloor, placeOnWall, type Guide } from './placement';
 import { markEnvDirty } from './registry';
 
