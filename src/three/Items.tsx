@@ -65,6 +65,14 @@ const ItemNode = memo(function ItemNode({ item, design }: { item: Item; design: 
     if (Math.abs(before - (p.x + p.y + p.z + g.rotation.y)) > 0.02 && performance.now() - born.current > 100) markEnvDirty();
   });
 
+  // Every part of every item takes shadows: a mesh that doesn't is lit by the sun straight
+  // through the walls (it glows). Runs after each render so newly built parts are covered too.
+  useEffect(() => {
+    ref.current?.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.receiveShadow = true;
+    });
+  });
+
   if (!Comp) return null;
 
   return (

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import { fabricMaterial, matte, metalMaterial, mirrorPT, woodMaterial, worldUV } from '../../materials/library';
 import { mulberry32 } from '../../materials/noise';
-import { merge, roundedBox, roundedRectShape } from '../geom';
+import { box, merge, roundedBox, roundedRectShape } from '../geom';
 import { FLAGS } from '../../lib/flags';
 import { registry } from '../registry';
 import { lathe, P, tube, type ItemProps } from './common';
@@ -278,7 +278,26 @@ export function RobeHook({ item, design }: ItemProps) {
 
 export function TPHolder({ item, design }: ItemProps) {
   const metal = metalMaterial(design.finishes.metal);
+  const style = P(item, 'style', 'square');
   const geo = useGeo(() => {
+    if (style === 'square') {
+      // Moen 90 Degree style: two square rosettes, square arms, and a square pivot bar across the front
+      const span = 6.9; // rosette centers
+      const reach = 3.4; // wall to bar center
+      const b = 0.3; // half the bar section
+      const y = 1.1;
+      const parts: THREE.BufferGeometry[] = [];
+      for (const sx of [-1, 1]) {
+        const x = (sx * span) / 2;
+        const ros = roundedBox(2.15, 2.15, 0.45, 0.08);
+        ros.translate(x, y, 0.225);
+        parts.push(ros, box(x - b, x + b, y - b, y + b, 0.45, reach - b));
+      }
+      // Front bar from the left arm through a butt joint with the right arm's end cap
+      parts.push(box(-span / 2 - b, span / 2 - b - 0.04, y - b, y + b, reach - b, reach + b));
+      parts.push(box(span / 2 - b, span / 2 + b, y - b, y + b, reach - b, reach + b));
+      return merge(parts);
+    }
     const ros = new THREE.CylinderGeometry(0.85, 0.85, 0.35, 28);
     ros.rotateX(Math.PI / 2);
     ros.translate(-2.4, 1, 0.18);
@@ -293,14 +312,53 @@ export function TPHolder({ item, design }: ItemProps) {
       32,
     );
     return merge([ros, arm]);
-  }, []);
+  }, [style]);
+  const roll = style === 'square' ? { x: 0, y: 1.1, z: 3.4 } : { x: 0.4, y: 1, z: 3 };
   return (
     <group>
       <mesh geometry={geo} material={metal} castShadow />
-      <mesh position={[0.4, 1, 3]} rotation-z={Math.PI / 2} castShadow>
+      <mesh position={[roll.x, roll.y, roll.z]} rotation-z={Math.PI / 2} castShadow>
         <cylinderGeometry args={[2.25, 2.25, 4.1, 40]} />
         <meshStandardMaterial color="#f7f6f2" roughness={0.95} />
       </mesh>
+    </group>
+  );
+}
+
+/** L-shaped flat hand towel bar: one wall block, an arm out, then an open-ended bar parallel to the wall. */
+export function TowelRing({ item, design }: ItemProps) {
+  const { w, d } = item;
+  const metal = metalMaterial(design.finishes.metal);
+  const hasTowel = P(item, 'towel', true);
+  const towelMat = fabricMaterial(P(item, 'towelColor', '#e6dccb'));
+  const side = P(item, 'side', 'left') === 'right' ? -1 : 1;
+  const bw = 0.95; // flat bar: wide on top…
+  const bt = 0.32; // …and thin
+  const y = 1;
+  const barZ = d - bw / 2;
+  const hw = useGeo(() => {
+    // Built for a left-hand mount; a right-hand mount swaps x spans (no mirroring, so windings stay valid).
+    const span = (x0: number, x1: number): [number, number] => (side > 0 ? [x0, x1] : [-x1, -x0]);
+    const x0 = -w / 2;
+    return merge([
+      // Wall block
+      box(...span(x0, x0 + 1.4), y - 0.65, y + 0.65, 0, 0.6),
+      // Arm out from the wall
+      box(...span(x0 + 0.2, x0 + 0.2 + bw), y - bt / 2, y + bt / 2, 0.6, d),
+      // Bar parallel to the wall, open at the far end
+      box(...span(x0 + 0.2, w / 2), y - bt / 2, y + bt / 2, d - bw, d),
+    ]);
+  }, [w, d, side]);
+  const towel = useGeo(() => {
+    const tw = Math.min(w - 3, 10);
+    const g = draped(tw, 13, 11, bw / 2, 0.4);
+    g.translate(side * (w / 2 - 0.8 - tw / 2), y, barZ);
+    return g;
+  }, [w, d, side]);
+  return (
+    <group>
+      <mesh geometry={hw} material={metal} castShadow />
+      {hasTowel && <mesh geometry={towel} material={towelMat} castShadow receiveShadow />}
     </group>
   );
 }
@@ -363,168 +421,6 @@ export function Rug({ item }: ItemProps) {
     return fabricMaterial(color);
   }, [weave, color, stripe]);
   return <mesh geometry={geo} material={mat} castShadow receiveShadow />;
-}
-
-function leafShape(len: number, wid: number, heart = false) {
-  const s = new THREE.Shape();
-  s.moveTo(0, 0);
-  if (heart) {
-    s.bezierCurveTo(wid, -len * 0.15, wid * 0.9, len * 0.7, 0, len);
-    s.bezierCurveTo(-wid * 0.9, len * 0.7, -wid, -len * 0.15, 0, 0);
-  } else {
-    s.quadraticCurveTo(wid / 2, len * 0.45, 0, len);
-    s.quadraticCurveTo(-wid / 2, len * 0.45, 0, 0);
-  }
-  const g = new THREE.ShapeGeometry(s, 4);
-  // Cup the leaf slightly so it catches light
-  const pos = g.attributes.position;
-  for (let i = 0; i < pos.count; i++) pos.setZ(i, -Math.pow(pos.getX(i) / (wid / 2), 2) * wid * 0.15);
-  g.computeVertexNormals();
-  return g;
-}
-
-export function Plant({ item }: ItemProps) {
-  const { h } = item;
-  const kind = P(item, 'kind', 'olive');
-  const potColor = P(item, 'pot', '#cbbba5');
-  const potH = kind === 'olive' ? Math.min(13, h * 0.32) : Math.min(9, h * 0.45);
-  const potR = kind === 'olive' ? 5.8 : 4.6;
-  const pot = useGeo(
-    () =>
-      lathe([
-        [0, 0],
-        [potR * 0.72, 0],
-        [potR * 0.78, 0.3],
-        [potR, potH - 0.6],
-        [potR + 0.25, potH - 0.3],
-        [potR + 0.25, potH],
-        [potR - 0.4, potH],
-        [potR - 0.5, potH - 1],
-        [0, potH - 1],
-      ]),
-    [potH, potR],
-  );
-  const { leaves, stems } = useMemo(() => {
-    const rnd = mulberry32(kind.length * 99 + Math.round(h));
-    const leafParts: THREE.BufferGeometry[] = [];
-    const stemParts: THREE.BufferGeometry[] = [];
-    const place = (g: THREE.BufferGeometry, at: THREE.Vector3, dir: THREE.Vector3, roll: number) => {
-      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-      const m = new THREE.Matrix4().compose(at, q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), roll)), new THREE.Vector3(1, 1, 1));
-      const c = g.clone();
-      c.applyMatrix4(m);
-      leafParts.push(c);
-    };
-    if (kind === 'olive') {
-      const leaf = leafShape(2.3, 0.5);
-      const top = h;
-      stemParts.push(
-        tube(
-          [
-            [0, potH - 1, 0],
-            [0.4, potH + (top - potH) * 0.3, 0.2],
-            [-0.3, potH + (top - potH) * 0.55, -0.1],
-            [0.2, top * 0.72, 0],
-          ],
-          0.45,
-          24,
-        ),
-      );
-      const crown = new THREE.Vector3(0, top * 0.8, 0);
-      for (let b = 0; b < 9; b++) {
-        const a = (b / 9) * Math.PI * 2 + rnd();
-        const end = new THREE.Vector3(Math.cos(a) * (4 + rnd() * 4), crown.y + (rnd() - 0.3) * (top - crown.y) * 1.2, Math.sin(a) * (4 + rnd() * 4));
-        const mid = crown.clone().lerp(end, 0.5).add(new THREE.Vector3(0, 1.5, 0));
-        stemParts.push(tube([[0, top * 0.7, 0], [mid.x, mid.y, mid.z], [end.x, end.y, end.z]], 0.12, 12));
-        for (let k = 0; k < 42; k++) {
-          const t = 0.3 + rnd() * 0.7;
-          const p = new THREE.Vector3(0, top * 0.7, 0).lerp(mid, Math.min(1, t * 2)).lerp(end, Math.max(0, t * 2 - 1));
-          p.add(new THREE.Vector3((rnd() - 0.5) * 2.5, (rnd() - 0.5) * 2.5, (rnd() - 0.5) * 2.5));
-          const dir = new THREE.Vector3(rnd() - 0.5, rnd() * 0.6 + 0.1, rnd() - 0.5);
-          place(leaf, p, dir, rnd() * Math.PI * 2);
-        }
-      }
-    } else if (kind === 'fern') {
-      const leaflet = leafShape(1.4, 0.45);
-      for (let f = 0; f < 22; f++) {
-        const a = (f / 22) * Math.PI * 2 + rnd() * 0.3;
-        const len = (h - potH) * (0.7 + rnd() * 0.5);
-        const up = 0.55 + rnd() * 0.5;
-        const pts: THREE.Vector3[] = [];
-        for (let i = 0; i <= 10; i++) {
-          const t = i / 10;
-          pts.push(new THREE.Vector3(Math.cos(a) * len * t, potH + Math.sin(t * Math.PI * 0.8) * len * up * 0.6 - t * t * len * 0.3, Math.sin(a) * len * t));
-        }
-        const curve = new THREE.CatmullRomCurve3(pts);
-        stemParts.push(new THREE.TubeGeometry(curve, 16, 0.06, 5));
-        for (let i = 1; i < 26; i++) {
-          const t = i / 26;
-          const p = curve.getPoint(t);
-          const tan = curve.getTangent(t);
-          const side = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0, 1, 0)).normalize();
-          const s = 1 - t * 0.7;
-          for (const sgn of [-1, 1]) {
-            const g = leaflet.clone();
-            g.scale(s, s, s);
-            place(g, p, side.clone().multiplyScalar(sgn).add(new THREE.Vector3(0, 0.3, 0)).add(tan.clone().multiplyScalar(0.4)), 0);
-          }
-        }
-      }
-    } else {
-      const heart = leafShape(2.4, 2, true);
-      for (let v = 0; v < 12; v++) {
-        const a = (v / 12) * Math.PI * 2;
-        const trail = v % 3 === 0 ? 10 + rnd() * 10 : 3 + rnd() * 3;
-        const pts = [
-          new THREE.Vector3(Math.cos(a) * 1, potH + 1.5, Math.sin(a) * 1),
-          new THREE.Vector3(Math.cos(a) * (potR + 0.8), potH + 2.5, Math.sin(a) * (potR + 0.8)),
-          new THREE.Vector3(Math.cos(a) * (potR + 1.4), potH - trail * 0.5, Math.sin(a) * (potR + 1.4)),
-          new THREE.Vector3(Math.cos(a + 0.2) * (potR + 1.8), potH - trail, Math.sin(a + 0.2) * (potR + 1.8)),
-        ];
-        const curve = new THREE.CatmullRomCurve3(pts);
-        stemParts.push(new THREE.TubeGeometry(curve, 24, 0.08, 5));
-        const n = Math.round(4 + trail / 2);
-        for (let i = 0; i < n; i++) {
-          const t = i / n;
-          const p = curve.getPoint(t);
-          const g = heart.clone();
-          g.scale(0.7 + rnd() * 0.5, 0.7 + rnd() * 0.5, 1);
-          place(g, p, new THREE.Vector3(Math.cos(a) + (rnd() - 0.5), 0.6 + rnd(), Math.sin(a) + (rnd() - 0.5)), rnd() * 6);
-        }
-      }
-    }
-    return { leaves: merge(leafParts), stems: merge(stemParts) };
-  }, [kind, h, potH, potR]);
-  useEffect(
-    () => () => {
-      leaves.dispose();
-      stems.dispose();
-    },
-    [leaves, stems],
-  );
-  const leafMat = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: kind === 'olive' ? '#6f7d5b' : kind === 'fern' ? '#5f7f45' : '#4f7a3a',
-        roughness: kind === 'olive' ? 0.75 : 0.5,
-        side: THREE.DoubleSide,
-        sheen: kind === 'olive' ? 0.6 : 0,
-        sheenColor: new THREE.Color('#c9d0bd'),
-      }),
-    [kind],
-  );
-  return (
-    <group position={[0, 0, potR + 0.5]}>
-      <mesh geometry={pot} castShadow receiveShadow>
-        <meshPhysicalMaterial color={potColor} roughness={0.85} />
-      </mesh>
-      <mesh position={[0, potH - 1.2, 0]} rotation-x={-Math.PI / 2} material={matte('#3d3129', 1)}>
-        <circleGeometry args={[potR - 0.5, 32]} />
-      </mesh>
-      <mesh geometry={stems} material={matte(kind === 'olive' ? '#6b5c4a' : '#4f6b3a', 0.9)} castShadow />
-      <mesh geometry={leaves} material={leafMat} castShadow receiveShadow />
-    </group>
-  );
 }
 
 export function VanityDecor({ item, design }: ItemProps) {

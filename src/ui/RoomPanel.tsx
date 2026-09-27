@@ -97,7 +97,7 @@ function PlanSVG() {
         <polygon points={poly(room.corners)} fill="url(#hatch)" />
         {/* items */}
         {design.items
-          .filter((it) => !['ceiling-light', 'sconce', 'robe-hook', 'tp-holder', 'vanity-decor', 'shower-trim'].includes(it.type))
+          .filter((it) => !['ceiling-light', 'sconce', 'robe-hook', 'tp-holder', 'towel-ring', 'art', 'vanity-decor', 'shower-trim'].includes(it.type))
           .map((it) => {
             const fp = itemFootprint(it);
             return (
