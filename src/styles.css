@@ -1476,3 +1476,152 @@ input[type='range'].sun {
   border-color: transparent;
   box-shadow: 0 10px 26px -10px rgba(184, 97, 47, 0.7);
 }
+
+/* grout */
+.grout-targets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.grout-target {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  background: rgba(30, 26, 22, 0.04);
+  box-shadow: inset 0 0 0 1px var(--line);
+  text-align: left;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.grout-target:hover {
+  background: rgba(30, 26, 22, 0.07);
+}
+
+.grout-target.active {
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1.5px var(--ink),
+    var(--shadow-sm);
+}
+
+.grout-target-label {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.grout-target-value {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ink);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grout-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.grout-family + .grout-family {
+  margin-top: 10px;
+}
+
+.grout-family-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.grout-swatches {
+  grid-template-columns: repeat(8, 1fr);
+  gap: 7px;
+}
+
+.grout-swatch {
+  border-radius: 8px;
+}
+
+.grout-swatch.selected::after {
+  border-radius: 11px;
+}
+
+.grout-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.grout-card {
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.grout-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.grout-card-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.grout-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.grout-pair-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grout-pair-item .chip {
+  justify-content: center;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+.grout-pair-item .chip:disabled {
+  cursor: default;
+}
+
+.grout-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.grout-custom .link {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 550;
+}

@@ -96,9 +96,9 @@ async function loadImageData(src: string, max = 512): Promise<ImageData | null> 
 }
 
 const previewCache = new Map<string, Promise<string>>();
-/** A small swatch image of a tile field (one pattern period, ≥ 16″). */
-export function tilePreview(spec: TileSpec, size = 160): Promise<string> {
-  const key = JSON.stringify(spec) + size;
+/** A small swatch image of a tile field, `span` inches across. */
+export function tilePreview(spec: TileSpec, size = 160, span = 18): Promise<string> {
+  const key = JSON.stringify(spec) + size + ':' + span;
   let p = previewCache.get(key);
   if (p) return p;
   p = (async () => {
@@ -111,8 +111,7 @@ export function tilePreview(spec: TileSpec, size = 160): Promise<string> {
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d')!;
-    // Show ~18″ of the field, tiling the period if needed.
-    const span = 18;
+    // Show `span` inches of the field, tiling the period if needed.
     const pxPerIn = size / span;
     const tw = maps.pw * pxPerIn;
     const th = maps.ph * pxPerIn;

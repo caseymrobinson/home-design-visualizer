@@ -4,28 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { PAINT_SWATCHES } from '../lib/tiles';
 import type { Design, MetalFinish, TilePattern, TileSpec, TileSurface } from '../lib/types';
 import { formatIn, uid } from '../lib/units';
-import { METAL_LABELS, METAL_SWATCH, tilePreview } from '../materials/library';
+import { METAL_LABELS, METAL_SWATCH } from '../materials/library';
 import { useDesign, useStore } from '../store';
+import { TileThumb } from './TileThumb';
+import { GroutSection, groutHint, wallTileId, type TileTarget } from './Grout';
 import { ColorWell, Field, LengthInput, PanelShell, Section, Seg, Select, Slider, staggerItem } from './primitives';
-
-export function TileThumb({ spec, size = 160 }: { spec: TileSpec; size?: number }) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    tilePreview(spec, size).then((s) => alive && setSrc(s));
-    return () => {
-      alive = false;
-    };
-  }, [spec, size]);
-  return (
-    <motion.div
-      className={`tile-thumb ${src ? '' : 'shimmer'}`}
-      style={src ? { backgroundImage: `url(${src})` } : undefined}
-      initial={false}
-      animate={{ opacity: 1 }}
-    />
-  );
-}
 
 const tileMeta = (t: TileSpec) => `${formatIn(t.width)} × ${formatIn(t.height)} · ${PATTERN_LABEL[t.pattern]}`;
 
@@ -49,13 +32,6 @@ const SURFACES: { value: TileSurface; label: string }[] = [
   { value: 'travertine', label: 'Travertine' },
   { value: 'quartz', label: 'Quartz' },
 ];
-
-/** Tile id most used by the room's tile zones. */
-function wallTileId(d: Design) {
-  const counts = new Map<string, number>();
-  for (const z of d.room.tileZones) counts.set(z.tile, (counts.get(z.tile) ?? 0) + (z.u1 - z.u0) * (z.v1 - z.v0));
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-}
 
 function useDebounced<T>(fn: (v: T) => void, ms = 220) {
   const t = useRef<number | undefined>(undefined);
@@ -159,7 +135,7 @@ function TileEditor({ spec }: { spec: TileSpec }) {
         </div>
       </Field>
       <Slider label="Tone variation" value={draft.variation} min={0} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => edit({ variation: v })} />
-      <Field label="Grout color">
+      <Field label="Grout color" hint={groutHint(draft.groutColor)}>
         <ColorWell value={draft.groutColor} onChange={(v) => edit({ groutColor: v })} />
       </Field>
       {(draft.surface === 'marble' || draft.surface === 'quartz') && (
@@ -232,7 +208,7 @@ function TileGrid({ selected, onPick }: { selected?: string; onPick: (id: string
 export function FinishesPanel() {
   const design = useDesign();
   const f = design.finishes;
-  const [target, setTarget] = useState<'floor' | 'wall'>('floor');
+  const [target, setTarget] = useState<TileTarget>('floor');
   const wallTile = wallTileId(design);
   const selected = target === 'floor' ? f.floorTile : wallTile;
   const upd = (fn: (d: Design) => void) => useStore.getState().update(fn);
@@ -282,6 +258,8 @@ export function FinishesPanel() {
           />
         </Section>
       </motion.div>
+
+      <GroutSection target={target} setTarget={setTarget} />
 
       {spec && (
         <motion.div {...staggerItem}>
