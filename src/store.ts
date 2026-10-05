@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { defaultDesign, LAYOUT_REV } from './lib/defaults';
+import { defaultDesign, electricalItems, LAYOUT_REV } from './lib/defaults';
 import { normalizeCorners } from './lib/geometry';
 import type { Design, Item, ViewMode } from './lib/types';
 import { uid } from './lib/units';
@@ -68,7 +68,14 @@ function load(): { designs: Design[]; activeId: string } {
         // Older saves predate the corrected layout (toilet/tub swap, door opposite the window).
         const fresh = defaultDesign();
         parsed.designs = parsed.designs.map((d: Design) =>
-          (d.layoutRev ?? 1) < LAYOUT_REV
+          d.layoutRev === 4
+            ? {
+                // Rev 5 only adds switches & outlets; keep everything the person placed.
+                ...d,
+                layoutRev: LAYOUT_REV,
+                items: d.items.some((i) => i.type === 'switch' || i.type === 'outlet') ? d.items : [...d.items, ...electricalItems(d.room)],
+              }
+            : (d.layoutRev ?? 1) < LAYOUT_REV
             ? {
                 ...d,
                 room: fresh.room,

@@ -10,7 +10,7 @@ export interface CatalogEntry {
   type: string;
   label: string;
   blurb: string;
-  category: 'Fixtures' | 'Storage' | 'Lighting' | 'Accessories' | 'Decor';
+  category: 'Fixtures' | 'Storage' | 'Lighting' | 'Electrical' | 'Accessories' | 'Decor';
   mount: Mount;
   /** Floor items that should back up flush against walls & rotate to face the room. */
   wallSnap?: boolean;
@@ -217,6 +217,34 @@ export const CATALOG: CatalogEntry[] = [
     fields: [
       { key: 'style', label: 'Style', kind: 'select', options: opt(['tube', '21″ frosted cylinder'], ['globe', 'Opal globe'], ['cylinder', 'Short cylinder'], ['cone', 'Pleated cone']) },
       { key: 'lumens', label: 'Brightness (lm)', kind: 'number', min: 100, max: 1500, step: 50, unit: '' },
+    ],
+  },
+  {
+    type: 'switch',
+    label: 'Light switch',
+    blurb: 'Rocker, slide dimmer or toggle · 1–3 gang',
+    category: 'Electrical',
+    mount: 'wall',
+    defaults: { w: 2.75, d: 0.5, h: 4.5, z: 45.75, params: { gangs: 1, style: 'rocker', plate: 'white' } },
+    dims: ['z'],
+    fields: [
+      { key: 'gangs', label: 'Gangs', kind: 'number', min: 1, max: 3, step: 1, unit: '' },
+      { key: 'style', label: 'Style', kind: 'select', options: opt(['rocker', 'Decora rocker'], ['dimmer', 'Rocker + slide dimmer'], ['toggle', 'Toggle']) },
+      { key: 'plate', label: 'Plate', kind: 'select', options: opt(['white', 'White'], ['black', 'Black'], ['finish', 'Metal (hardware finish)']) },
+    ],
+  },
+  {
+    type: 'outlet',
+    label: 'Outlet',
+    blurb: 'GFCI, duplex or USB · 1–2 gang',
+    category: 'Electrical',
+    mount: 'wall',
+    defaults: { w: 2.75, d: 0.5, h: 4.5, z: 41.75, params: { gangs: 1, style: 'gfci', plate: 'white' } },
+    dims: ['z'],
+    fields: [
+      { key: 'gangs', label: 'Gangs', kind: 'number', min: 1, max: 2, step: 1, unit: '' },
+      { key: 'style', label: 'Type', kind: 'select', options: opt(['gfci', 'GFCI (required in bathrooms)'], ['duplex', 'Duplex'], ['usb', 'Outlet + USB-A/C']) },
+      { key: 'plate', label: 'Plate', kind: 'select', options: opt(['white', 'White'], ['black', 'Black'], ['finish', 'Metal (hardware finish)']) },
     ],
   },
   {

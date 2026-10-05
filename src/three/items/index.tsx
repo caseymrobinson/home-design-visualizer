@@ -3,6 +3,7 @@ import { Linen, Shelf, Vanity } from './Casework';
 import type { ItemProps } from './common';
 import { Mirror, RobeHook, Rug, TowelBar, TowelRing, TPHolder, VanityDecor } from './Accessories';
 import { WallArt } from './Art';
+import { LightSwitch, Outlet } from './Electrical';
 import { Plant } from './Plants';
 import { CeilingLight, Sconce } from './Lights';
 import { Curtain, GlassPanel, ShowerTrim, Toilet, Tub } from './Plumbing';
@@ -24,6 +25,8 @@ export const ITEM_COMPONENTS: Record<string, ComponentType<ItemProps>> = {
   'tp-holder': TPHolder,
   'towel-ring': TowelRing,
   art: WallArt,
+  switch: LightSwitch,
+  outlet: Outlet,
   rug: Rug,
   plant: Plant,
   'vanity-decor': VanityDecor,

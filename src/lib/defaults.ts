@@ -129,6 +129,7 @@ export function defaultItems(room: Room): Item[] {
     // Kalium 21″ frosted cylinder sconces (set of two), mounted vertically outside the mirrors
     onWall(room, C, 'sconce', cx(vanityX - 34), { w: 3, d: 5, h: 21, z: 54, params: { style: 'tube', lumens: 800 } }),
     onWall(room, C, 'sconce', cx(vanityX + 34), { w: 3, d: 5, h: 21, z: 54, params: { style: 'tube', lumens: 800 } }),
+    ...electricalItems(room),
     onWall(room, A, 'shelf', 18.25),
     onWall(room, halfA, 'tp-holder', 26),
     onWall(room, D, 'robe-hook', dy(35)),
@@ -142,13 +143,31 @@ export function defaultItems(room: Room): Item[] {
   ];
 }
 
+/** Code-minded basics: a 2-gang switch on the door's latch side, a GFCI within 3′ of both basins. */
+export function electricalItems(room: Room): Item[] {
+  const B: SurfaceRef = { kind: 'wall', wall: 1 };
+  const C: SurfaceRef = { kind: 'wall', wall: 2 };
+  // Door on wall B spans u 57–87 (+3¼″ casing) and hinges at its start, so the latch side is u > 90¼.
+  const safe = (make: () => Item) => {
+    try {
+      return [make()];
+    } catch {
+      return []; // the room was reshaped and that wall no longer exists
+    }
+  };
+  return [
+    ...safe(() => onWall(room, B, 'switch', 93.5, { z: 48 - 4.5 / 2, w: 4.56, params: { gangs: 2, style: 'dimmer', plate: 'white' } })),
+    ...safe(() => onWall(room, C, 'outlet', 100.5 - 54, { z: 44 - 4.5 / 2, params: { gangs: 1, style: 'gfci', plate: 'white' } })),
+  ];
+}
+
 export function tilesById(ids: string[]): Record<string, TileSpec> {
   const out: Record<string, TileSpec> = {};
   for (const t of TILE_PRESETS) if (ids.includes(t.id)) out[t.id] = structuredClone(t);
   return out;
 }
 
-export const LAYOUT_REV = 4;
+export const LAYOUT_REV = 5;
 
 export function defaultDesign(): Design {
   const room = defaultRoom();

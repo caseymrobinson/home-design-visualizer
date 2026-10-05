@@ -6,7 +6,7 @@ import { addFromCatalog } from './actions';
 import { ITEM_ICONS } from './icons';
 import { PanelShell, Section, staggerItem } from './primitives';
 
-const ORDER: CatalogEntry['category'][] = ['Fixtures', 'Storage', 'Lighting', 'Accessories', 'Decor'];
+const ORDER: CatalogEntry['category'][] = ['Fixtures', 'Storage', 'Lighting', 'Electrical', 'Accessories', 'Decor'];
 
 export function AddPanel() {
   return (
